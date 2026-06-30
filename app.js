@@ -190,6 +190,16 @@ function typesetMath(nodes) {
   }
 }
 
+function optionLabel(index, total = 4) {
+  return total === 5 ? String(index + 1) : letters[index];
+}
+
+function textOnly(value) {
+  const template = document.createElement("template");
+  template.innerHTML = String(value || "");
+  return (template.content.textContent || "").replace(/\s+/g, " ").trim();
+}
+
 function show(id) {
   document.querySelectorAll(".screen").forEach((s) => s.classList.remove("active"));
   $(id).classList.add("active");
@@ -664,11 +674,20 @@ function questionAnalysis(q, picked, ok) {
   return {
     id: q.id,
     section: q.section,
+    setTitle: q.setTitle,
     topic: q.topic,
     difficulty: q.difficulty,
+    passageHtml: q.passageHtml,
+    visualHtml: q.visualHtml,
     question: q.question,
-    userAnswer: unattempted ? "Unattempted" : `${letters[picked]}. ${q.options[picked]}`,
-    correctAnswer: `${letters[q.answer]}. ${q.options[q.answer]}`,
+    options: q.options.map((option, index) => ({
+      label: optionLabel(index, q.options.length),
+      text: option,
+      selected: picked === index,
+      correct: q.answer === index
+    })),
+    userAnswer: unattempted ? "Unattempted" : `${optionLabel(picked, q.options.length)}. ${q.options[picked]}`,
+    correctAnswer: `${optionLabel(q.answer, q.options.length)}. ${q.options[q.answer]}`,
     correct: ok,
     errorType,
     solution: q.solution,
@@ -727,11 +746,69 @@ function nextStepFor(q, errorType) {
   return `Revise ${q.topic}, then solve 3 similar questions before moving to a new topic.`;
 }
 
+function renderReportOptions(item) {
+  return `
+    <ol class="report-options">
+      ${(item.options || []).map((option) => {
+        const classes = [
+          option.correct ? "correct" : "",
+          option.selected ? "selected" : "",
+          option.selected && !option.correct ? "wrong" : ""
+        ].filter(Boolean).join(" ");
+        const tag = option.correct ? "Correct" : option.selected ? "Khushi chose" : "";
+        return `<li class="${classes}">
+          <span class="option-mark">${option.label}</span>
+          <span class="option-copy">${normalizeMath(option.text)}</span>
+          ${tag ? `<span class="option-tag">${tag}</span>` : ""}
+        </li>`;
+      }).join("")}
+    </ol>`;
+}
+
+function renderReportContext(item) {
+  if (!item.passageHtml && !item.visualHtml) {
+    return `<div class="report-context compact">No separate passage or set data was required for this question.</div>`;
+  }
+  return `
+    <section class="report-context">
+      <div class="report-subhead">${item.section === "VARC" ? "Full passage" : "Set data / working table"}</div>
+      ${item.passageHtml ? `<div class="report-passage">${item.passageHtml}</div>` : ""}
+      ${item.visualHtml ? `<div class="report-visual">${item.visualHtml}</div>` : ""}
+    </section>`;
+}
+
+function renderQuestionAnalysisCard(item, index) {
+  return `
+    <article class="mini-analysis ${item.correct ? "correct" : "wrong"}">
+      <div class="report-question-head">
+        <div>
+          <div class="review-meta">Q${index + 1} • ${item.section} • ${item.topic} • ${item.difficulty}</div>
+          <h4>${normalizeMath(item.question)}</h4>
+        </div>
+        <span class="result-chip ${item.correct ? "correct" : "wrong"}">${item.errorType}</span>
+      </div>
+      ${renderReportContext(item)}
+      <div class="report-subhead">Options</div>
+      ${renderReportOptions(item)}
+      <div class="answer-grid">
+        <p><b>Khushi's answer</b><span class="${item.correct ? "pill-good" : "pill-bad"}">${normalizeMath(item.userAnswer)}</span></p>
+        <p><b>Correct answer</b><span class="pill-good">${normalizeMath(item.correctAnswer)}</span></p>
+      </div>
+      <section class="analysis-detail">
+        <p><b>Formula / idea used:</b> ${normalizeMath(item.formula)}</p>
+        <p><b>Detailed solution:</b> ${normalizeMath(item.solution)}</p>
+        <p><b>Better way to solve:</b> ${normalizeMath(item.betterWay)}</p>
+        <p><b>Next step:</b> ${normalizeMath(item.nextStep)}</p>
+      </section>
+    </article>`;
+}
+
 function renderReport(report) {
-  const reportItems = report.items || deck.questions.map((q) => {
+  const needsRichItems = !report.items || report.items.some((item) => !item.options || !("passageHtml" in item));
+  const reportItems = needsRichItems ? deck.questions.map((q) => {
     const picked = responses[q.id];
     return questionAnalysis(q, picked, picked === q.answer);
-  });
+  }) : report.items;
   $("reportTitle").textContent = `${report.blockTitle || "Analysis"} • ${displayDate(report.dateKey)}`;
   $("scoreSummary").innerHTML = `
     <div><b>${report.correct}/${report.total}</b><span>correct</span></div>
@@ -740,22 +817,12 @@ function renderReport(report) {
     <div><b>${Object.keys(report.bySection).length}</b><span>sections</span></div>`;
   const sec = Object.entries(report.bySection).map(([name, s]) => `<li><b>${name}</b>: ${s.correct}/${s.total} correct, ${s.attempted} attempted.</li>`).join("");
   const weak = report.weakest.length ? report.weakest.map(([t, n]) => `<li>${t}: ${n} miss${n > 1 ? "es" : ""}. Revise concept, then redo similar questions untimed.</li>`).join("") : "<li>No weak area today. Preserve this pace and review solutions anyway.</li>";
-  const detailed = reportItems.map((item, i) => `
-    <article class="mini-analysis ${item.correct ? "correct" : "wrong"}">
-      <div class="review-meta">Q${i + 1} • ${item.section} • ${item.topic} • ${item.errorType}</div>
-      <h4>${normalizeMath(item.question)}</h4>
-      <p><b>Khushi's answer:</b> <span class="${item.correct ? "pill-good" : "pill-bad"}">${normalizeMath(item.userAnswer)}</span></p>
-      <p><b>Correct answer:</b> <span class="pill-good">${normalizeMath(item.correctAnswer)}</span></p>
-      <p><b>Formula / idea used:</b> ${normalizeMath(item.formula)}</p>
-      <p><b>Better way:</b> ${normalizeMath(item.betterWay)}</p>
-      <p><b>Solution:</b> ${normalizeMath(item.solution)}</p>
-      <p><b>Next step:</b> ${normalizeMath(item.nextStep)}</p>
-    </article>`).join("");
+  const detailed = reportItems.map((item, i) => renderQuestionAnalysisCard(item, i)).join("");
   $("improvementBox").innerHTML = `
     <h3>What went wrong</h3><ul>${sec}</ul>
     <h3>What to do next</h3><ul>${weak}</ul>
-    <p>Recommendation: spend 20 minutes reviewing only wrong and unattempted questions, then write one-line error notes: concept gap, calculation slip, misread condition, or option trap.</p>
-    <h3>Question-by-question AI-style review</h3>${detailed}`;
+    <p class="report-recommendation">Recommendation: spend 20 minutes reviewing only wrong and unattempted questions, then write one-line error notes: concept gap, calculation slip, misread condition, or option trap.</p>
+    <h3>Question-by-question detailed review</h3>${detailed}`;
   typesetMath([$("improvementBox")]);
 }
 
@@ -809,8 +876,14 @@ function sendEmailReport() {
     `Question-wise review:`,
     ...report.items.map((item, i) => [
       ``,
-      `Q${i + 1}. ${item.section} - ${item.topic}`,
+      `Q${i + 1}. ${item.section} - ${item.topic} - ${item.difficulty}`,
+      item.passageHtml ? `Passage / set data: ${textOnly(item.passageHtml)}` : "",
       `Question: ${item.question}`,
+      `Options:`,
+      ...(item.options || []).map((option) => {
+        const notes = [option.selected ? "Khushi chose" : "", option.correct ? "Correct" : ""].filter(Boolean);
+        return `${option.label}. ${option.text}${notes.length ? ` (${notes.join(", ")})` : ""}`;
+      }),
       `Khushi's answer: ${item.userAnswer}`,
       `Correct answer: ${item.correctAnswer}`,
       `Error type: ${item.errorType}`,
@@ -818,7 +891,7 @@ function sendEmailReport() {
       `Better way: ${item.betterWay}`,
       `Solution: ${item.solution}`,
       `Next step: ${item.nextStep}`
-    ].join(`\n`))
+    ].filter(Boolean).join(`\n`))
   ];
   const body = encodeURIComponent(lines.join("\n"));
   const cfg = window.KHUSHI_CAT_CONFIG?.emailjs;

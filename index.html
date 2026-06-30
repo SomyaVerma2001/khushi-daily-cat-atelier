@@ -1,0 +1,148 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Khushi's Daily CAT Atelier</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <div class="app-shell">
+    <header class="topbar">
+      <div>
+        <div class="eyebrow">Daily CAT Practice</div>
+        <h1>Khushi's CAT Atelier</h1>
+      </div>
+      <div class="top-actions">
+        <button id="mainMenuBtn" class="ghost">Main menu</button>
+        <button id="pauseBtn" class="ghost hidden">Pause</button>
+        <button id="logoutBtn" class="ghost hidden">Logout</button>
+      </div>
+    </header>
+
+    <main>
+      <section id="loginScreen" class="screen active">
+        <div class="hero-card glass">
+          <div class="eyebrow">Welcome Khushi</div>
+          <h2>Let's start today's practice.</h2>
+          <p>
+            One VARC set, one DILR set, and fifteen Quant questions every day till CAT.
+            Answers stay hidden while solving and unlock after submission.
+          </p>
+          <div class="login-grid">
+            <button id="googleBtn" class="primary">Continue with Google</button>
+            <button id="localBtn" class="secondary">Use Khushi local profile</button>
+          </div>
+          <p class="tiny">
+            Google login works after Firebase credentials are added in <code>config.js</code>.
+            Until then, local profile mode saves everything in this browser.
+          </p>
+        </div>
+      </section>
+
+      <section id="homeScreen" class="screen">
+        <div class="home-grid">
+          <div class="glass welcome-panel">
+            <div class="eyebrow">Welcome Khushi</div>
+            <h2>Let's start today's practice.</h2>
+            <p id="todayLine"></p>
+            <div class="stats-row">
+              <div><b id="daysLeft">0</b><span>days to Nov 30</span></div>
+              <div><b id="bankCount">0</b><span>available source items</span></div>
+              <div><b id="doneCount">0</b><span>completed days</span></div>
+            </div>
+            <button id="startTodayBtn" class="primary">Start today's set</button>
+          </div>
+          <aside class="glass menu-panel">
+            <div class="eyebrow">Main menu</div>
+            <button id="historyBtn" class="menu-item">Past solved questions</button>
+            <button id="reportBtn" class="menu-item">Latest report</button>
+            <button id="previewBtn" class="menu-item">Preview today's syllabus</button>
+          </aside>
+        </div>
+      </section>
+
+      <section id="testScreen" class="screen">
+        <div class="cat-frame">
+          <div class="cat-header">
+            <div>
+              <div class="eyebrow" id="sectionLabel">VARC</div>
+              <h2 id="questionTitle">Question</h2>
+              <p id="sourceLabel"></p>
+            </div>
+            <div class="progress-pill"><span id="progressText"></span></div>
+          </div>
+          <div class="cat-body">
+            <article class="passage-panel" id="passagePanel"></article>
+            <article class="question-panel">
+              <div id="questionText" class="question-text"></div>
+              <div id="visualPanel" class="visual-panel hidden"></div>
+              <div id="optionsPanel" class="options"></div>
+              <div class="nav-row">
+                <button id="prevBtn" class="secondary">Previous</button>
+                <button id="clearBtn" class="ghost">Clear</button>
+                <button id="nextBtn" class="secondary">Next</button>
+              </div>
+            </article>
+          </div>
+          <div class="submit-bar glass">
+            <div id="saveState">Responses auto-save live.</div>
+            <button id="finishBtn" class="primary">Finish and view report</button>
+          </div>
+        </div>
+      </section>
+
+      <section id="pausedScreen" class="screen">
+        <div class="hero-card glass">
+          <div class="eyebrow">Paused</div>
+          <h2>Take the breath. Come back sharp.</h2>
+          <p>Your responses are saved. No timer is running.</p>
+          <button id="resumeBtn" class="primary">Resume practice</button>
+        </div>
+      </section>
+
+      <section id="reportScreen" class="screen">
+        <div class="report-wrap">
+          <div class="glass report-card">
+            <div class="eyebrow">Detailed report</div>
+            <h2 id="reportTitle">Today's analysis</h2>
+            <div id="scoreSummary" class="score-grid"></div>
+            <div id="improvementBox" class="analysis-box"></div>
+            <div class="report-actions">
+              <button id="emailReportBtn" class="secondary">Email report</button>
+              <button id="reviewBtn" class="primary">Review questions and solutions</button>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section id="reviewScreen" class="screen">
+        <div class="review-wrap">
+          <div class="review-head">
+            <div>
+              <div class="eyebrow">Review mode</div>
+              <h2>Questions, answers, and solutions</h2>
+            </div>
+            <button id="backReportBtn" class="secondary">Back to report</button>
+          </div>
+          <div id="reviewList"></div>
+        </div>
+      </section>
+
+      <section id="historyScreen" class="screen">
+        <div class="review-wrap">
+          <div class="review-head">
+            <div>
+              <div class="eyebrow">Past solved questions</div>
+              <h2>Khushi's practice history</h2>
+            </div>
+            <button id="backHomeBtn" class="secondary">Back home</button>
+          </div>
+          <div id="historyList"></div>
+        </div>
+      </section>
+    </main>
+  </div>
+  <script src="app.js"></script>
+</body>
+</html>

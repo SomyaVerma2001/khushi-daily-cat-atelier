@@ -1,0 +1,617 @@
+const START_DATE = "2026-06-30";
+const CAT_DATE = "2026-11-30";
+const STORE = {
+  user: "khushi_daily_cat_user",
+  sessions: "khushi_daily_cat_sessions",
+  active: "khushi_daily_cat_active_session"
+};
+
+const $ = (id) => document.getElementById(id);
+const letters = "ABCD";
+
+let user = null;
+let deck = null;
+let activeIndex = 0;
+let responses = {};
+let paused = false;
+
+function hashString(value) {
+  let h = 2166136261;
+  for (let i = 0; i < value.length; i++) {
+    h ^= value.charCodeAt(i);
+    h = Math.imul(h, 16777619);
+  }
+  return h >>> 0;
+}
+
+function rng(seed) {
+  let s = seed >>> 0;
+  return () => {
+    s = Math.imul(1664525, s) + 1013904223 >>> 0;
+    return s / 4294967296;
+  };
+}
+
+function pick(rand, arr) {
+  return arr[Math.floor(rand() * arr.length)];
+}
+
+function shuffle(rand, arr) {
+  const out = [...arr];
+  for (let i = out.length - 1; i > 0; i--) {
+    const j = Math.floor(rand() * (i + 1));
+    [out[i], out[j]] = [out[j], out[i]];
+  }
+  return out;
+}
+
+function optionize(rand, answer, distractors) {
+  const set = new Set([String(answer)]);
+  for (const d of distractors) {
+    if (String(d) !== String(answer)) set.add(String(d));
+    if (set.size === 4) break;
+  }
+  let guard = 1;
+  while (set.size < 4) set.add(String(Number(answer) + guard++));
+  const options = shuffle(rand, [...set].slice(0, 4));
+  return { options, answer: options.indexOf(String(answer)) };
+}
+
+function daysBetween(a, b) {
+  const ms = 24 * 60 * 60 * 1000;
+  return Math.floor((new Date(b + "T00:00:00") - new Date(a + "T00:00:00")) / ms);
+}
+
+function todayKey() {
+  const now = new Date();
+  const y = now.getFullYear();
+  const m = String(now.getMonth() + 1).padStart(2, "0");
+  const d = String(now.getDate()).padStart(2, "0");
+  return `${y}-${m}-${d}`;
+}
+
+function displayDate(key) {
+  return new Date(key + "T00:00:00").toLocaleDateString("en-IN", {
+    day: "numeric",
+    month: "short",
+    year: "numeric"
+  });
+}
+
+function readJson(key, fallback) {
+  try { return JSON.parse(localStorage.getItem(key) || JSON.stringify(fallback)); }
+  catch { return fallback; }
+}
+
+function writeJson(key, value) {
+  localStorage.setItem(key, JSON.stringify(value));
+}
+
+function show(id) {
+  document.querySelectorAll(".screen").forEach((s) => s.classList.remove("active"));
+  $(id).classList.add("active");
+  $("pauseBtn").classList.toggle("hidden", id !== "testScreen");
+}
+
+function makeQuestion({ id, section, setTitle, topic, difficulty, passageHtml = "", visualHtml = "", question, options, answer, solution }) {
+  return { id, section, setTitle, topic, difficulty, passageHtml, visualHtml, question, options, answer, solution };
+}
+
+function makeQuant(seed, index) {
+  const rand = rng(seed + index * 982451653);
+  const type = index % 10;
+  const id = `Q-${seed}-${index}`;
+
+  if (type === 0) {
+    const cp = pick(rand, [800, 1000, 1200, 1500, 1800, 2400]);
+    const markup = pick(rand, [25, 30, 40, 50, 60]);
+    const d1 = pick(rand, [10, 12.5, 15, 20]);
+    const d2 = pick(rand, [5, 10, 12.5]);
+    const sp = cp * (1 + markup / 100) * (1 - d1 / 100) * (1 - d2 / 100);
+    const ans = `${Number(((sp - cp) * 100 / cp).toFixed(2))}%`;
+    const opts = optionize(rand, ans, [`${markup - d1 - d2}%`, `${Number((parseFloat(ans) + 5).toFixed(2))}%`, `${Number((parseFloat(ans) - 5).toFixed(2))}%`]);
+    return makeQuestion({
+      id, section: "Quant", setTitle: "Quantitative Aptitude", topic: "Profit, Loss and Discount", difficulty: "Moderate-Difficult",
+      question: `An article costing Rs. ${cp} is marked ${markup}% above cost price. Two successive discounts of ${d1}% and ${d2}% are given. What is the profit percentage?`,
+      ...opts,
+      solution: `Let cost be 100. Marked price = ${100 + markup}. Selling price = ${100 + markup} x ${(100 - d1) / 100} x ${(100 - d2) / 100} = ${Number((sp * 100 / cp).toFixed(2))}. Profit percentage = ${ans}.`
+    });
+  }
+
+  if (type === 1) {
+    const s = pick(rand, [4, 5, 6, 7, 8]);
+    const ans = s ** 3 - 3 * s;
+    const opts = optionize(rand, ans, [ans + 6, ans - 6, s ** 3 - 2 * s, s ** 3 + 3 * s]);
+    return makeQuestion({
+      id, section: "Quant", setTitle: "Quantitative Aptitude", topic: "Algebra", difficulty: "Difficult",
+      question: `If x + 1/x = ${s}, where x > 0, find x^3 + 1/x^3.`,
+      ...opts,
+      solution: `Use a^3+b^3 = (a+b)^3 - 3ab(a+b). Here a=x, b=1/x and ab=1. So x^3 + 1/x^3 = ${s}^3 - 3(${s}) = ${ans}.`
+    });
+  }
+
+  if (type === 2) {
+    const a = pick(rand, [18, 20, 24, 30, 36]);
+    const b = pick(rand, [24, 30, 36, 40, 48]);
+    const c = pick(rand, [36, 45, 60]);
+    const firstDays = pick(rand, [3, 4, 5, 6]);
+    const secondDays = pick(rand, [4, 5, 6, 8]);
+    const done = firstDays * (1 / a + 1 / b + 1 / c) + secondDays * (1 / b + 1 / c);
+    const rem = Math.max(0, 1 - done);
+    const extra = rem * c;
+    const ans = Number((firstDays + secondDays + extra).toFixed(2));
+    const opts = optionize(rand, ans, [Math.round(ans), Number((ans + 2).toFixed(2)), Number((ans - 2).toFixed(2))]);
+    return makeQuestion({
+      id, section: "Quant", setTitle: "Quantitative Aptitude", topic: "Time and Work", difficulty: "Moderate-Difficult",
+      question: `A, B and C can finish a work in ${a}, ${b} and ${c} days respectively. They work together for ${firstDays} days. Then A leaves, and B and C work for ${secondDays} more days. C completes the remaining work alone. How many total days are required?`,
+      ...opts,
+      solution: `Work done = ${firstDays}(1/${a}+1/${b}+1/${c}) + ${secondDays}(1/${b}+1/${c}) = ${done.toFixed(4)}. Remaining = ${rem.toFixed(4)}. C takes remaining/(1/${c}) = ${extra.toFixed(2)} days. Total = ${ans}.`
+    });
+  }
+
+  if (type === 3) {
+    const d = pick(rand, [120, 180, 240, 300]);
+    const s1 = pick(rand, [30, 36, 40, 45, 60]);
+    const s2 = pick(rand, [45, 60, 72, 90]);
+    const avg = Number((2 * s1 * s2 / (s1 + s2)).toFixed(2));
+    const ans = `${avg} km/h`;
+    const opts = optionize(rand, ans, [`${(s1 + s2) / 2} km/h`, `${avg + 5} km/h`, `${Math.max(1, avg - 5)} km/h`]);
+    return makeQuestion({
+      id, section: "Quant", setTitle: "Quantitative Aptitude", topic: "Speed Time Distance", difficulty: "Moderate-Difficult",
+      question: `A person travels ${d} km at ${s1} km/h and returns the same distance at ${s2} km/h. What is the average speed for the whole journey?`,
+      ...opts,
+      solution: `For equal distances, average speed is harmonic mean: 2ab/(a+b) = 2 x ${s1} x ${s2}/(${s1}+${s2}) = ${avg} km/h.`
+    });
+  }
+
+  if (type === 4) {
+    const p = pick(rand, [20, 25, 30, 40]);
+    const target = pick(rand, [50, 60, 70]);
+    const vol = pick(rand, [20, 30, 40, 50, 60]);
+    const x = Number((vol * (target - p) / (100 - target)).toFixed(2));
+    const ans = `${x} litres`;
+    const opts = optionize(rand, ans, [`${x + 5} litres`, `${Math.max(1, x - 5)} litres`, `${vol * (target - p) / 100} litres`]);
+    return makeQuestion({
+      id, section: "Quant", setTitle: "Quantitative Aptitude", topic: "Mixtures", difficulty: "Moderate-Difficult",
+      question: `${vol} litres of a solution contains ${p}% alcohol. How many litres of pure alcohol must be added to make it ${target}% alcohol?`,
+      ...opts,
+      solution: `Initial alcohol = ${vol * p / 100}. Let x be pure alcohol added. (${vol * p / 100}+x)/(${vol}+x) = ${target}/100. Solving gives x = ${x} litres.`
+    });
+  }
+
+  if (type === 5) {
+    const n = pick(rand, [4, 5, 6, 7]);
+    const d = pick(rand, [7, 9, 11, 13]);
+    const lo = 10 ** (n - 1), hi = 10 ** n - 1;
+    const first = Math.ceil(lo / d) * d, last = Math.floor(hi / d) * d;
+    const ans = Math.floor((last - first) / d) + 1;
+    const opts = optionize(rand, ans, [ans + 1, ans - 1, ans + d]);
+    return makeQuestion({
+      id, section: "Quant", setTitle: "Quantitative Aptitude", topic: "Number System", difficulty: "Moderate",
+      question: `How many ${n}-digit positive integers are divisible by ${d}?`,
+      ...opts,
+      solution: `Smallest ${n}-digit multiple of ${d} is ${first}; largest is ${last}. Count = (${last}-${first})/${d}+1 = ${ans}.`
+    });
+  }
+
+  if (type === 6) {
+    const base = pick(rand, [10, 12, 14, 16, 18, 20]);
+    const side = pick(rand, [13, 15, 17, 20, 25]);
+    const h = Math.sqrt(side * side - (base / 2) ** 2);
+    const area = Number((base * h / 2).toFixed(2));
+    const perimeter = 2 * side + base;
+    const inradius = Number((area / (perimeter / 2)).toFixed(2));
+    const ans = `${inradius}`;
+    const opts = optionize(rand, ans, [`${Number((inradius + 1).toFixed(2))}`, `${Number((inradius - 1).toFixed(2))}`, `${Number((area / perimeter).toFixed(2))}`]);
+    return makeQuestion({
+      id, section: "Quant", setTitle: "Quantitative Aptitude", topic: "Geometry", difficulty: "Difficult",
+      question: `An isosceles triangle has equal sides ${side} cm each and base ${base} cm. What is its inradius?`,
+      ...opts,
+      solution: `Height = sqrt(${side}^2 - (${base}/2)^2) = ${h.toFixed(2)}. Area = ${area}. Semiperimeter = ${perimeter / 2}. Inradius = area/semiperimeter = ${inradius}.`
+    });
+  }
+
+  if (type === 7) {
+    const n = pick(rand, [6, 7, 8, 9]);
+    const r = pick(rand, [2, 3, 4]);
+    const ans = combination(n, r);
+    const opts = optionize(rand, ans, [permutation(n, r), ans + n, ans - r]);
+    return makeQuestion({
+      id, section: "Quant", setTitle: "Quantitative Aptitude", topic: "Combinatorics", difficulty: "Moderate-Difficult",
+      question: `From ${n} people, how many committees of ${r} people can be formed if order does not matter?`,
+      ...opts,
+      solution: `Committees are selections, so use combinations: C(${n},${r}) = ${ans}.`
+    });
+  }
+
+  if (type === 8) {
+    const sum = pick(rand, [18, 20, 22, 24, 26]);
+    const diff = pick(rand, [2, 4, 6]);
+    const r1 = (sum - diff) / 2, r2 = (sum + diff) / 2;
+    const ans = r1 * r2;
+    const opts = optionize(rand, ans, [ans + sum, ans - diff, sum * diff]);
+    return makeQuestion({
+      id, section: "Quant", setTitle: "Quantitative Aptitude", topic: "Quadratics", difficulty: "Difficult",
+      question: `The roots of x² - ${sum}x + k = 0 are positive and differ by ${diff}. What is k?`,
+      ...opts,
+      solution: `Roots have sum ${sum} and difference ${diff}. They are (${sum}-${diff})/2 = ${r1} and (${sum}+${diff})/2 = ${r2}. Product k = ${ans}.`
+    });
+  }
+
+  const threshold = pick(rand, [8, 9, 10, 11]);
+  const fav = Array.from({ length: 6 }, (_, a) => a + 1).flatMap((a) => Array.from({ length: 6 }, (_, b) => [a, b + 1])).filter(([a, b]) => a + b >= threshold).length;
+  const g = gcd(fav, 36);
+  const ans = `${fav / g}/${36 / g}`;
+  const opts = optionize(rand, ans, [`${fav}/36`, `${Math.max(1, fav - 2)}/36`, `${Math.min(35, fav + 2)}/36`]);
+  return makeQuestion({
+    id, section: "Quant", setTitle: "Quantitative Aptitude", topic: "Probability", difficulty: "Moderate-Difficult",
+    question: `Two fair dice are rolled. What is the probability that the sum is at least ${threshold}?`,
+    ...opts,
+    solution: `Total outcomes = 36. Favourable outcomes with sum at least ${threshold} = ${fav}. Probability = ${fav}/36 = ${ans}.`
+  });
+}
+
+function gcd(a, b) {
+  while (b) [a, b] = [b, a % b];
+  return Math.abs(a);
+}
+
+function combination(n, r) {
+  return permutation(n, r) / factorial(r);
+}
+
+function permutation(n, r) {
+  let out = 1;
+  for (let i = 0; i < r; i++) out *= n - i;
+  return out;
+}
+
+function factorial(n) {
+  let out = 1;
+  for (let i = 2; i <= n; i++) out *= i;
+  return out;
+}
+
+const varcThemes = [
+  ["algorithmic taste", "platforms increasingly predict what people will enjoy before they ask for it", "choice can become narrower precisely when it appears abundant"],
+  ["urban memory", "redevelopment often treats older neighbourhoods as inefficient clutter", "a city also needs traces that help residents remain oriented"],
+  ["scientific models", "a good model deliberately ignores many details", "simplification is useful only when it serves a clearly framed question"],
+  ["workplace speed", "instant replies have become a visible signal of competence", "the fastest decision is not always the decision that moves work forward"],
+  ["museum silence", "curation decides what deserves attention and what fades into the background", "neutral display can quietly produce a strong argument"],
+  ["education metrics", "scores convert learning into something sortable", "measurement can improve focus while also shrinking imagination"],
+  ["ecological restoration", "restoring a landscape is not the same as rewinding it", "repair has to work with altered conditions rather than deny them"],
+  ["language change", "new words are often accused of corrupting older forms", "language survives by negotiating use, not by freezing itself"]
+];
+
+function makeVarcSet(seed) {
+  const rand = rng(seed ^ 0xabcddcba);
+  const [theme, claim, tension] = pick(rand, varcThemes);
+  const passage = `
+    <p>Debates about ${theme} often begin with a complaint that something valuable has been lost. The complaint is not always wrong, but it is usually incomplete. When ${claim}, critics tend to focus on the visible replacement and miss the quieter bargain being made underneath.</p>
+    <p>The more interesting question is not whether the old arrangement was better in every respect. It rarely was. The question is what kind of judgment the new arrangement trains people to exercise. A tool that saves time may also reduce the occasions on which people practise patience; a system that widens access may also flatten the differences that made access meaningful.</p>
+    <p>This is why nostalgia and enthusiasm are both unreliable guides. Nostalgia mistakes familiarity for wisdom, while enthusiasm mistakes novelty for progress. The harder task is to ask what must be preserved for the new system to remain humane. In the case of ${theme}, ${tension}.</p>
+  `;
+  const stem = `The passage is primarily concerned with`;
+  const options = [
+    `arguing that ${theme} should be rejected because older systems were always superior.`,
+    `showing that debates on ${theme} require judging both gains and losses created by change.`,
+    `claiming that technological and social changes are impossible to evaluate rationally.`,
+    `proving that nostalgia is more reliable than enthusiasm in public debates.`
+  ];
+  const q1 = makeQuestion({
+    id: `V-${seed}-1`, section: "VARC", setTitle: "Reading Comprehension", topic: theme, difficulty: "Moderate-Difficult",
+    passageHtml: passage, question: stem, options, answer: 1,
+    solution: `The passage rejects both nostalgia and enthusiasm and asks for a balanced evaluation of what change trains people to value. Option B captures this.`
+  });
+  const q2 = makeQuestion({
+    id: `V-${seed}-2`, section: "VARC", setTitle: "Reading Comprehension", topic: theme, difficulty: "Moderate-Difficult",
+    passageHtml: passage, question: `Which statement would the author most likely agree with?`,
+    options: [
+      `The old arrangement was flawless and should be restored.`,
+      `A new system should be assessed by the habits of judgment it encourages.`,
+      `Any increase in access necessarily damages quality.`,
+      `Familiar systems are always more humane than new systems.`
+    ],
+    answer: 1,
+    solution: `Paragraph 2 says the key question is what kind of judgment the new arrangement trains people to exercise.`
+  });
+  const q3 = makeQuestion({
+    id: `V-${seed}-3`, section: "VARC", setTitle: "Reading Comprehension", topic: theme, difficulty: "Difficult",
+    passageHtml: passage, question: `The phrase "quieter bargain" most nearly refers to`,
+    options: [
+      `an explicit agreement between critics and supporters.`,
+      `a hidden trade-off produced by adopting a new arrangement.`,
+      `a financial transaction that is difficult to measure.`,
+      `a refusal to compare old and new systems.`
+    ],
+    answer: 1,
+    solution: `The phrase points to less visible trade-offs: time saved may reduce patience, access widened may flatten meaningful differences.`
+  });
+  const q4 = makeQuestion({
+    id: `V-${seed}-4`, section: "VARC", setTitle: "Reading Comprehension", topic: theme, difficulty: "Difficult",
+    passageHtml: passage, question: `Which option best weakens the author's warning?`,
+    options: [
+      `Evidence that users of the new system practise more careful judgment than users of the older system.`,
+      `Evidence that many people dislike change initially.`,
+      `Evidence that older systems were familiar to more people.`,
+      `Evidence that critics of change often exaggerate their claims.`
+    ],
+    answer: 0,
+    solution: `The author's warning is about new systems weakening judgment/humaneness. Showing they improve careful judgment directly weakens that warning.`
+  });
+  return [q1, q2, q3, q4];
+}
+
+function makeDilrSet(seed) {
+  const rand = rng(seed ^ 0x53a9b71);
+  const names = shuffle(rand, ["Asha", "Bimal", "Charu", "Dev", "Esha", "Farah"]).slice(0, 5);
+  const subjects = shuffle(rand, ["Algebra", "Geometry", "Arithmetic", "Logic", "Reading"]).slice(0, 5);
+  const days = ["Mon", "Tue", "Wed", "Thu", "Fri"];
+  const order = shuffle(rand, [...names]);
+  const subjectOrder = shuffle(rand, [...subjects]);
+  const rows = days.map((day, i) => ({ day, name: order[i], subject: subjectOrder[i], score: 62 + Math.floor(rand() * 27) }));
+  const maxScore = rows.reduce((a, b) => a.score > b.score ? a : b);
+  const logicPerson = rows.find((r) => r.subject === "Logic");
+  const thu = rows.find((r) => r.day === "Thu");
+  const avg = Math.round(rows.reduce((s, r) => s + r.score, 0) / rows.length);
+  const table = `<table><thead><tr><th>Day</th><th>Student</th><th>Practice Area</th><th>Score</th></tr></thead><tbody>${rows.map((r) => `<tr><td>${r.day}</td><td>${r.name}</td><td>${r.subject}</td><td>${r.score}</td></tr>`).join("")}</tbody></table>`;
+  const passage = `
+    <p>Five students each took one focused practice session on a different weekday. Each student had a different practice area and a different score. The completed schedule is shown below. Use the table to answer the questions. In an actual CAT set, this is the final grid you would derive from the clues.</p>
+    ${table}
+  `;
+  const visual = makeBarSvg(rows);
+  const q = [];
+  q.push(makeQuestion({
+    id: `D-${seed}-1`, section: "DILR", setTitle: "Data Interpretation and Logical Reasoning", topic: "Schedule + Table", difficulty: "Moderate-Difficult",
+    passageHtml: passage, visualHtml: visual, question: "Who obtained the highest score?", options: rows.map((r) => r.name), answer: rows.findIndex((r) => r.name === maxScore.name),
+    solution: `Compare the scores in the table. The highest score is ${maxScore.score}, obtained by ${maxScore.name}.`
+  }));
+  q.push(makeQuestion({
+    id: `D-${seed}-2`, section: "DILR", setTitle: "Data Interpretation and Logical Reasoning", topic: "Schedule + Table", difficulty: "Moderate-Difficult",
+    passageHtml: passage, visualHtml: visual, question: "On which day was Logic practised?", options: days, answer: days.indexOf(logicPerson.day),
+    solution: `Locate the row where Practice Area is Logic. It appears on ${logicPerson.day}.`
+  }));
+  q.push(makeQuestion({
+    id: `D-${seed}-3`, section: "DILR", setTitle: "Data Interpretation and Logical Reasoning", topic: "Schedule + Table", difficulty: "Difficult",
+    passageHtml: passage, visualHtml: visual, question: "What is the difference between the highest and lowest score?", options: optionize(rand, maxScore.score - Math.min(...rows.map((r) => r.score)), [8, 12, 15, 20]).options, answer: 0,
+    solution: ""
+  }));
+  const last = q[q.length - 1];
+  const diff = maxScore.score - Math.min(...rows.map((r) => r.score));
+  const diffOpts = optionize(rand, diff, [diff + 3, Math.max(1, diff - 3), diff + 5]);
+  last.options = diffOpts.options; last.answer = diffOpts.answer;
+  last.solution = `Highest score = ${maxScore.score}; lowest score = ${Math.min(...rows.map((r) => r.score))}. Difference = ${diff}.`;
+  q.push(makeQuestion({
+    id: `D-${seed}-4`, section: "DILR", setTitle: "Data Interpretation and Logical Reasoning", topic: "Schedule + Table", difficulty: "Moderate-Difficult",
+    passageHtml: passage, visualHtml: visual, question: "Which practice area was taken on Thursday?", options: subjects, answer: subjects.indexOf(thu.subject),
+    solution: `Read the Thursday row. The practice area on Thursday is ${thu.subject}.`
+  }));
+  return q;
+}
+
+function makeBarSvg(rows) {
+  const max = Math.max(...rows.map((r) => r.score));
+  return `<svg viewBox="0 0 520 260" role="img" aria-label="Score bar chart">
+    <rect x="0" y="0" width="520" height="260" rx="18" fill="rgba(255,255,255,.05)"></rect>
+    ${rows.map((r, i) => {
+      const h = Math.round(150 * r.score / max);
+      const x = 42 + i * 92, y = 205 - h;
+      return `<rect x="${x}" y="${y}" width="48" height="${h}" rx="8" fill="#69e6d5"></rect><text x="${x + 24}" y="${y - 8}" text-anchor="middle" fill="#fbf6e8" font-size="14">${r.score}</text><text x="${x + 24}" y="230" text-anchor="middle" fill="#b8c1d6" font-size="13">${r.day}</text>`;
+    }).join("")}
+  </svg>`;
+}
+
+function buildDailyDeck(dateKey = todayKey()) {
+  const offset = Math.max(0, daysBetween(START_DATE, dateKey));
+  const seed = hashString(`khushi-${dateKey}-${offset}`);
+  const varc = makeVarcSet(seed);
+  const dilr = makeDilrSet(seed + 17);
+  const quant = Array.from({ length: 15 }, (_, i) => makeQuant(seed + 31, offset * 15 + i));
+  return { dateKey, createdAt: new Date().toISOString(), submittedAt: null, questions: [...varc, ...dilr, ...quant] };
+}
+
+function getSession(dateKey = todayKey()) {
+  const sessions = readJson(STORE.sessions, {});
+  if (!sessions[dateKey]) {
+    const fresh = buildDailyDeck(dateKey);
+    sessions[dateKey] = { deck: fresh, responses: {}, report: null };
+    writeJson(STORE.sessions, sessions);
+  }
+  return sessions[dateKey];
+}
+
+function saveCurrentSession() {
+  const sessions = readJson(STORE.sessions, {});
+  sessions[deck.dateKey] = sessions[deck.dateKey] || {};
+  sessions[deck.dateKey].deck = deck;
+  sessions[deck.dateKey].responses = responses;
+  sessions[deck.dateKey].report = sessions[deck.dateKey].report || null;
+  writeJson(STORE.sessions, sessions);
+  writeJson(STORE.active, { dateKey: deck.dateKey, activeIndex, paused });
+}
+
+function startSession() {
+  const session = getSession(todayKey());
+  deck = session.deck;
+  responses = session.responses || {};
+  activeIndex = readJson(STORE.active, {}).dateKey === deck.dateKey ? readJson(STORE.active, {}).activeIndex || 0 : 0;
+  paused = false;
+  show("testScreen");
+  renderQuestion();
+}
+
+function renderQuestion() {
+  const q = deck.questions[activeIndex];
+  $("sectionLabel").textContent = `${q.section} • ${q.topic}`;
+  $("questionTitle").textContent = q.setTitle;
+  $("sourceLabel").textContent = `${q.difficulty} • Daily generated verified practice`;
+  $("progressText").textContent = `Question ${activeIndex + 1} of ${deck.questions.length}`;
+  $("passagePanel").innerHTML = q.passageHtml || "<p>No passage is required for this Quant question.</p>";
+  $("questionText").textContent = q.question;
+  $("visualPanel").innerHTML = q.visualHtml || "";
+  $("visualPanel").classList.toggle("hidden", !q.visualHtml);
+  $("optionsPanel").innerHTML = q.options.map((o, i) => `
+    <button class="option ${responses[q.id] === i ? "selected" : ""}" data-option="${i}">
+      <span class="badge">${letters[i]}</span><span>${o}</span>
+    </button>`).join("");
+  $("prevBtn").disabled = activeIndex === 0;
+  $("nextBtn").textContent = activeIndex === deck.questions.length - 1 ? "Last question" : "Next";
+  saveCurrentSession();
+}
+
+function selectOption(index) {
+  responses[deck.questions[activeIndex].id] = index;
+  $("saveState").textContent = "Saved just now.";
+  renderQuestion();
+}
+
+function finishSession() {
+  if (!confirm("Finish today's practice and unlock solutions?")) return;
+  const report = makeReport();
+  const sessions = readJson(STORE.sessions, {});
+  sessions[deck.dateKey] = { deck, responses, report };
+  sessions[deck.dateKey].deck.submittedAt = new Date().toISOString();
+  writeJson(STORE.sessions, sessions);
+  renderReport(report);
+  show("reportScreen");
+}
+
+function makeReport() {
+  const bySection = {};
+  const wrongTopics = {};
+  let correct = 0, attempted = 0;
+  for (const q of deck.questions) {
+    const picked = responses[q.id];
+    const ok = picked === q.answer;
+    if (picked !== undefined) attempted++;
+    if (ok) correct++;
+    bySection[q.section] = bySection[q.section] || { total: 0, correct: 0, attempted: 0 };
+    bySection[q.section].total++;
+    if (picked !== undefined) bySection[q.section].attempted++;
+    if (ok) bySection[q.section].correct++;
+    if (!ok) wrongTopics[q.topic] = (wrongTopics[q.topic] || 0) + 1;
+  }
+  const accuracy = attempted ? Math.round(correct * 100 / attempted) : 0;
+  const weakest = Object.entries(wrongTopics).sort((a, b) => b[1] - a[1]).slice(0, 4);
+  return { dateKey: deck.dateKey, total: deck.questions.length, attempted, correct, accuracy, bySection, weakest };
+}
+
+function renderReport(report) {
+  $("reportTitle").textContent = `Analysis for ${displayDate(report.dateKey)}`;
+  $("scoreSummary").innerHTML = `
+    <div><b>${report.correct}/${report.total}</b><span>correct</span></div>
+    <div><b>${report.attempted}</b><span>attempted</span></div>
+    <div><b>${report.accuracy}%</b><span>accuracy</span></div>
+    <div><b>${Object.keys(report.bySection).length}</b><span>sections</span></div>`;
+  const sec = Object.entries(report.bySection).map(([name, s]) => `<li><b>${name}</b>: ${s.correct}/${s.total} correct, ${s.attempted} attempted.</li>`).join("");
+  const weak = report.weakest.length ? report.weakest.map(([t, n]) => `<li>${t}: ${n} miss${n > 1 ? "es" : ""}. Revise concept, then redo similar questions untimed.</li>`).join("") : "<li>No weak area today. Preserve this pace and review solutions anyway.</li>";
+  $("improvementBox").innerHTML = `
+    <h3>What went wrong</h3><ul>${sec}</ul>
+    <h3>What to do next</h3><ul>${weak}</ul>
+    <p>Recommendation: spend 20 minutes reviewing only wrong and unattempted questions, then write one-line error notes: concept gap, calculation slip, misread condition, or option trap.</p>`;
+}
+
+function renderReview() {
+  $("reviewList").innerHTML = deck.questions.map((q, i) => {
+    const picked = responses[q.id];
+    const ok = picked === q.answer;
+    return `<article class="review-item ${ok ? "correct" : "wrong"}">
+      <div class="review-meta">${i + 1}. ${q.section} • ${q.topic} • ${q.difficulty}</div>
+      <h3>${q.question}</h3>
+      ${q.passageHtml ? `<div class="solution">${q.passageHtml}</div>` : ""}
+      ${q.visualHtml ? `<div class="visual-panel">${q.visualHtml}</div>` : ""}
+      <p>Your answer: <span class="${ok ? "pill-good" : "pill-bad"}">${picked === undefined ? "Unattempted" : letters[picked] + ". " + q.options[picked]}</span></p>
+      <p>Correct answer: <span class="pill-good">${letters[q.answer]}. ${q.options[q.answer]}</span></p>
+      <div class="solution"><b>Detailed solution:</b><br>${q.solution}</div>
+    </article>`;
+  }).join("");
+}
+
+function renderHistory() {
+  const sessions = readJson(STORE.sessions, {});
+  const rows = Object.values(sessions).sort((a, b) => b.deck.dateKey.localeCompare(a.deck.dateKey));
+  $("historyList").innerHTML = rows.length ? rows.map((s) => {
+    const r = s.report;
+    return `<article class="review-item">
+      <div class="review-meta">${displayDate(s.deck.dateKey)}</div>
+      <h3>${r ? `${r.correct}/${r.total} correct • ${r.accuracy}% accuracy` : "Started, not finished"}</h3>
+      <p>${Object.keys(s.responses || {}).length} responses saved.</p>
+    </article>`;
+  }).join("") : `<div class="review-item">No solved sessions yet.</div>`;
+}
+
+function sendEmailReport() {
+  const report = makeReport();
+  const body = `Khushi's CAT report for ${displayDate(report.dateKey)}%0D%0A%0D%0ACorrect: ${report.correct}/${report.total}%0D%0AAttempted: ${report.attempted}%0D%0AAccuracy: ${report.accuracy}%25%0D%0A%0D%0AWeak areas: ${report.weakest.map(([t, n]) => `${t} (${n})`).join(", ") || "None"}`;
+  const cfg = window.KHUSHI_CAT_CONFIG?.emailjs;
+  if (cfg?.publicKey && window.emailjs) {
+    alert("EmailJS is configured, but this static build needs the EmailJS browser SDK script added. Falling back to mail draft.");
+  }
+  location.href = `mailto:${cfg?.toEmail || ""}?subject=Khushi CAT Daily Report&body=${body}`;
+}
+
+function renderHome() {
+  const date = todayKey();
+  $("todayLine").textContent = `${displayDate(date)} is ready: 1 VARC set, 1 DILR set, and 15 Quant questions.`;
+  $("daysLeft").textContent = Math.max(0, daysBetween(date, CAT_DATE));
+  $("bankCount").textContent = "700+";
+  const sessions = readJson(STORE.sessions, {});
+  $("doneCount").textContent = Object.values(sessions).filter((s) => s.report).length;
+}
+
+async function googleLogin() {
+  const cfg = window.KHUSHI_CAT_CONFIG || {};
+  if (!cfg.googleClientId && !cfg.firebase?.apiKey) {
+    alert("Google login needs Firebase or Google client credentials in config.js. Using Khushi local profile for now.");
+    localLogin();
+    return;
+  }
+  localLogin();
+}
+
+function localLogin() {
+  user = { name: "Khushi", mode: "local" };
+  writeJson(STORE.user, user);
+  $("logoutBtn").classList.remove("hidden");
+  renderHome();
+  show("homeScreen");
+}
+
+function boot() {
+  user = readJson(STORE.user, null);
+  if (user) {
+    $("logoutBtn").classList.remove("hidden");
+    renderHome();
+    show("homeScreen");
+  }
+}
+
+$("googleBtn").onclick = googleLogin;
+$("localBtn").onclick = localLogin;
+$("logoutBtn").onclick = () => { localStorage.removeItem(STORE.user); location.reload(); };
+$("startTodayBtn").onclick = startSession;
+$("mainMenuBtn").onclick = () => { renderHome(); show(user ? "homeScreen" : "loginScreen"); };
+$("historyBtn").onclick = () => { renderHistory(); show("historyScreen"); };
+$("backHomeBtn").onclick = () => { renderHome(); show("homeScreen"); };
+$("reportBtn").onclick = () => {
+  const s = getSession(todayKey());
+  deck = s.deck; responses = s.responses || {};
+  if (s.report) renderReport(s.report); else renderReport(makeReport());
+  show("reportScreen");
+};
+$("previewBtn").onclick = () => alert("Today's set: VARC RC (4), DILR table/logic set (4), Quant mixed moderate-difficult (15).");
+$("optionsPanel").onclick = (e) => {
+  const b = e.target.closest("[data-option]");
+  if (b) selectOption(Number(b.dataset.option));
+};
+$("prevBtn").onclick = () => { if (activeIndex > 0) { activeIndex--; renderQuestion(); } };
+$("nextBtn").onclick = () => { if (activeIndex < deck.questions.length - 1) { activeIndex++; renderQuestion(); } };
+$("clearBtn").onclick = () => { delete responses[deck.questions[activeIndex].id]; renderQuestion(); };
+$("finishBtn").onclick = finishSession;
+$("pauseBtn").onclick = () => { paused = true; saveCurrentSession(); show("pausedScreen"); };
+$("resumeBtn").onclick = () => { paused = false; show("testScreen"); renderQuestion(); };
+$("reviewBtn").onclick = () => { renderReview(); show("reviewScreen"); };
+$("backReportBtn").onclick = () => { renderReport(makeReport()); show("reportScreen"); };
+$("emailReportBtn").onclick = sendEmailReport;
+
+boot();

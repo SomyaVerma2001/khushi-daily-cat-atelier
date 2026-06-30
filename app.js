@@ -398,120 +398,411 @@ function factorial(n) {
 }
 
 const varcThemes = [
-  ["algorithmic taste", "platforms increasingly predict what people will enjoy before they ask for it", "choice can become narrower precisely when it appears abundant"],
-  ["urban memory", "redevelopment often treats older neighbourhoods as inefficient clutter", "a city also needs traces that help residents remain oriented"],
-  ["scientific models", "a good model deliberately ignores many details", "simplification is useful only when it serves a clearly framed question"],
-  ["workplace speed", "instant replies have become a visible signal of competence", "the fastest decision is not always the decision that moves work forward"],
-  ["museum silence", "curation decides what deserves attention and what fades into the background", "neutral display can quietly produce a strong argument"],
-  ["education metrics", "scores convert learning into something sortable", "measurement can improve focus while also shrinking imagination"],
-  ["ecological restoration", "restoring a landscape is not the same as rewinding it", "repair has to work with altered conditions rather than deny them"],
-  ["language change", "new words are often accused of corrupting older forms", "language survives by negotiating use, not by freezing itself"]
+  {
+    topic: "algorithmic taste",
+    anchor: "streaming platforms, shopping feeds, and recommendation engines",
+    example: "A listener who once wandered through unfamiliar albums may now meet music as a sequence of risk-managed predictions.",
+    tension: "The problem is not that recommendation is artificial, but that it can quietly replace exploration with a comfortingly narrow version of one's past behaviour.",
+    concession: "Yet a human curator is not automatically freer or fairer; curators also carry habits, prejudices, and commercial pressures.",
+    conclusion: "The better question is whether the system leaves room for deliberate surprise."
+  },
+  {
+    topic: "urban memory",
+    anchor: "flyovers, glass offices, renovated markets, and heritage walks",
+    example: "A lane that looks inefficient to a planner may be the same lane by which residents remember seasons, occupations, festivals, and quarrels.",
+    tension: "When redevelopment treats memory as decorative, it preserves a signboard while removing the practices that made the signboard intelligible.",
+    concession: "No city can become a museum without becoming hostile to the people who still need housing, transport, and work.",
+    conclusion: "A liveable city must therefore change without pretending that all traces are equally replaceable."
+  },
+  {
+    topic: "scientific models",
+    anchor: "climate simulations, economic forecasts, and simplified laboratory systems",
+    example: "A map that records every stone would be useless for navigation; a model that records every variable can become equally unhelpful.",
+    tension: "Simplification becomes dangerous only when its omissions are forgotten and the model begins to pose as the world itself.",
+    concession: "But rejecting simplification altogether is merely another way of refusing to think with discipline.",
+    conclusion: "The virtue of a model lies in knowing exactly what question it is allowed to answer."
+  },
+  {
+    topic: "workplace speed",
+    anchor: "instant messages, dashboards, read receipts, and productivity rituals",
+    example: "A reply sent in ninety seconds may display attentiveness while postponing the slower act of understanding what the problem actually is.",
+    tension: "Speed is seductive because it produces evidence of effort even when it prevents the kind of attention that would reduce effort later.",
+    concession: "There are emergencies in which delay is not wisdom but evasion.",
+    conclusion: "The mature workplace distinguishes urgency from mere visibility."
+  },
+  {
+    topic: "museum silence",
+    anchor: "labels, lighting, empty space, glass cases, and visitor routes",
+    example: "The quiet of a gallery can make an object seem self-evident, although every angle and label has already instructed the visitor how to look.",
+    tension: "Neutral presentation often works by hiding the choices through which neutrality is manufactured.",
+    concession: "This does not mean curation is manipulation in a crude sense; selection is unavoidable whenever attention is limited.",
+    conclusion: "The honest museum teaches visitors to notice the frame as well as the object."
+  },
+  {
+    topic: "education metrics",
+    anchor: "rankings, cut-offs, percentiles, dashboards, and standardised tests",
+    example: "A score can reveal a weakness that praise would politely ignore, but it can also persuade a student that only scored weaknesses are real.",
+    tension: "Measurement sharpens effort by narrowing it, and the narrowing becomes harmful when it is mistaken for the whole of learning.",
+    concession: "Teachers who dismiss measurement entirely often leave students with vague encouragement and little diagnosis.",
+    conclusion: "The issue is not whether to measure, but whether measurement remains a servant of learning."
+  },
+  {
+    topic: "ecological restoration",
+    anchor: "rewilding projects, river clean-ups, seed banks, and managed forests",
+    example: "Planting an old species list in a changed climate may honour history while ignoring the altered conditions under which living systems must now survive.",
+    tension: "Restoration fails when it imagines repair as the cancellation of time.",
+    concession: "Still, novelty by itself is not a principle; damaged landscapes need memory as well as adaptation.",
+    conclusion: "Repair is best understood as disciplined improvisation rather than return."
+  },
+  {
+    topic: "language change",
+    anchor: "new pronouns, borrowed slang, professional jargon, and online abbreviations",
+    example: "Every generation hears decay in the speech of the next, partly because language makes social change audible before it becomes respectable.",
+    tension: "The wish to freeze language often disguises a wish to freeze the authority of those already fluent in its older forms.",
+    concession: "Not every new phrase is precise, beautiful, or worth keeping.",
+    conclusion: "A language survives because communities argue over use, not because a committee arrests it."
+  }
 ];
 
 function makeVarcSet(seed) {
   const rand = rng(seed ^ 0xabcddcba);
-  const [theme, claim, tension] = pick(rand, varcThemes);
+  const t = pick(rand, varcThemes);
   const passage = `
-    <p>Debates about ${theme} often begin with a complaint that something valuable has been lost. The complaint is not always wrong, but it is usually incomplete. When ${claim}, critics tend to focus on the visible replacement and miss the quieter bargain being made underneath.</p>
-    <p>The more interesting question is not whether the old arrangement was better in every respect. It rarely was. The question is what kind of judgment the new arrangement trains people to exercise. A tool that saves time may also reduce the occasions on which people practise patience; a system that widens access may also flatten the differences that made access meaningful.</p>
-    <p>This is why nostalgia and enthusiasm are both unreliable guides. Nostalgia mistakes familiarity for wisdom, while enthusiasm mistakes novelty for progress. The harder task is to ask what must be preserved for the new system to remain humane. In the case of ${theme}, ${tension}.</p>
+    <p>Arguments about ${t.topic} are often conducted as if the choice were between reverence for the old and surrender to the new. That framing is convenient, because it allows each side to accuse the other of either sentimentality or blindness. It is also shallow. Most social and intellectual practices do not disappear in a single dramatic replacement; they are altered through small changes in attention, incentives, and vocabulary. By the time people notice that a practice has changed, the deeper bargain may already have been accepted as common sense.</p>
+    <p>Consider ${t.anchor}. ${t.example} The visible gain is usually easy to describe: greater reach, faster access, cleaner comparison, or better coordination. The loss is harder to name because it is not always a loss of information. It is often a loss of occasions. A culture can retain the facts of an older practice while losing the situations in which people learnt how to judge, wait, interpret, or disagree. This is why complaints about change can sound exaggerated and still point toward something real.</p>
+    <p>At the same time, the familiar past should not be granted moral immunity. Older arrangements excluded people, wasted effort, and hid their own forms of arbitrariness behind tradition. ${t.concession} A serious defence of judgment cannot depend on nostalgia, because nostalgia tends to remember the training and forget the gatekeeping. The question is not whether an older arrangement felt richer to those who were already at home in it; the question is what capacities a newer arrangement cultivates or weakens among those who must live inside it.</p>
+    <p>This distinction matters because systems increasingly justify themselves through measurable convenience. Convenience is not trivial. It can democratise access and release attention for better uses. But convenience also has a political talent: it makes alternatives appear needlessly difficult. ${t.tension} When a practice becomes frictionless, people may lose not only the friction but also the reflective pause that friction accidentally created. The danger is therefore not change itself, but the disappearance of any shared language for asking what the change is training us to become.</p>
+    <p>One way of testing a new arrangement, then, is to ask what kinds of mistakes it makes easy. A practice that makes people more efficient but less able to notice exceptions has not simply saved time; it has redistributed attention. A practice that widens participation while making every participant behave in the same predictable manner has not simply become inclusive; it has made inclusion conditional on conformity. These are not decisive objections, but they are the sort of costs that remain invisible when evaluation stops at convenience.</p>
+    <p>${t.conclusion} Such a standard is deliberately modest. It does not demand that institutions preserve every old ritual, nor does it romanticise difficulty as a virtue. It asks instead for designs, policies, and habits that keep judgment visible. A society that can revise its tools while still examining the forms of attention those tools reward is less likely to confuse progress with mere smoothness.</p>
   `;
-  const stem = `The passage is primarily concerned with`;
-  const options = [
-    `arguing that ${theme} should be rejected because older systems were always superior.`,
-    `showing that debates on ${theme} require judging both gains and losses created by change.`,
-    `claiming that technological and social changes are impossible to evaluate rationally.`,
-    `proving that nostalgia is more reliable than enthusiasm in public debates.`
-  ];
   const q1 = makeQuestion({
-    id: `V-${seed}-1`, section: "VARC", setTitle: "Reading Comprehension", topic: theme, difficulty: "Moderate-Difficult",
-    passageHtml: passage, question: stem, options, answer: 1,
-    solution: `The passage rejects both nostalgia and enthusiasm and asks for a balanced evaluation of what change trains people to value. Option B captures this.`
+    id: `V-${seed}-1`, section: "VARC", setTitle: "Reading Comprehension", topic: t.topic, difficulty: "Difficult",
+    passageHtml: passage, question: "Which of the following best captures the central argument of the passage?",
+    options: [
+      `New arrangements around ${t.topic} should be resisted because they inevitably destroy older forms of judgment.`,
+      `The real question about ${t.topic} is what habits of judgment a new arrangement preserves, weakens, or makes invisible.`,
+      `Convenience is the only reliable measure by which changes in ${t.topic} should be judged.`,
+      `Nostalgia is usually a more accurate guide than enthusiasm when institutions undergo change.`
+    ],
+    answer: 1,
+    solution: `The passage is not anti-change and not pro-nostalgia. Its main concern is the kind of judgment and attention produced by new arrangements. Option B captures that balanced claim.`
   });
   const q2 = makeQuestion({
-    id: `V-${seed}-2`, section: "VARC", setTitle: "Reading Comprehension", topic: theme, difficulty: "Moderate-Difficult",
-    passageHtml: passage, question: `Which statement would the author most likely agree with?`,
+    id: `V-${seed}-2`, section: "VARC", setTitle: "Reading Comprehension", topic: t.topic, difficulty: "Moderate-Difficult",
+    passageHtml: passage, question: "According to the passage, why can complaints about change be exaggerated and still point toward something real?",
     options: [
-      `The old arrangement was flawless and should be restored.`,
-      `A new system should be assessed by the habits of judgment it encourages.`,
-      `Any increase in access necessarily damages quality.`,
-      `Familiar systems are always more humane than new systems.`
+      "Because every complaint about change contains reliable historical evidence.",
+      "Because people may misdescribe the change while sensing a genuine loss of occasions for judgment or attention.",
+      "Because older institutions were always more inclusive than newer ones.",
+      "Because measurable convenience is never valuable in serious social practices."
     ],
     answer: 1,
-    solution: `Paragraph 2 says the key question is what kind of judgment the new arrangement trains people to exercise.`
+    solution: `Paragraph 2 says critics may focus on visible replacements, but the subtler loss may be the disappearance of situations in which people practised judgment, patience, or interpretation.`
   });
   const q3 = makeQuestion({
-    id: `V-${seed}-3`, section: "VARC", setTitle: "Reading Comprehension", topic: theme, difficulty: "Difficult",
-    passageHtml: passage, question: `The phrase "quieter bargain" most nearly refers to`,
+    id: `V-${seed}-3`, section: "VARC", setTitle: "Reading Comprehension", topic: t.topic, difficulty: "Difficult",
+    passageHtml: passage, question: "Which of the following would most weaken the author's concern?",
     options: [
-      `an explicit agreement between critics and supporters.`,
-      `a hidden trade-off produced by adopting a new arrangement.`,
-      `a financial transaction that is difficult to measure.`,
-      `a refusal to compare old and new systems.`
+      `Evidence that the new arrangement in ${t.topic} makes access faster for a much larger population.`,
+      `Evidence that users of the new arrangement become more reflective, independent, and capable of disagreement than users of the older arrangement.`,
+      `Evidence that some defenders of the older arrangement were socially privileged.`,
+      `Evidence that many people initially dislike new practices before adapting to them.`
     ],
     answer: 1,
-    solution: `The phrase points to less visible trade-offs: time saved may reduce patience, access widened may flatten meaningful differences.`
+    solution: `The author's worry is not speed or newness by itself; it is the weakening of judgment. Evidence that the new system strengthens judgment directly weakens the concern.`
   });
   const q4 = makeQuestion({
-    id: `V-${seed}-4`, section: "VARC", setTitle: "Reading Comprehension", topic: theme, difficulty: "Difficult",
-    passageHtml: passage, question: `Which option best weakens the author's warning?`,
+    id: `V-${seed}-4`, section: "VARC", setTitle: "Reading Comprehension", topic: t.topic, difficulty: "Difficult",
+    passageHtml: passage, question: "The phrase \"convenience also has a political talent\" most nearly means that convenience",
     options: [
-      `Evidence that users of the new system practise more careful judgment than users of the older system.`,
-      `Evidence that many people dislike change initially.`,
-      `Evidence that older systems were familiar to more people.`,
-      `Evidence that critics of change often exaggerate their claims.`
+      "can make one arrangement seem natural and alternatives seem unreasonable without openly arguing for that conclusion.",
+      "is useful only when governments impose it through formal policy.",
+      "always reduces inequality by making difficult practices easier for everyone.",
+      "is a deceptive word for laziness and should therefore be rejected."
     ],
     answer: 0,
-    solution: `The author's warning is about new systems weakening judgment/humaneness. Showing they improve careful judgment directly weakens that warning.`
+    solution: `The next sentence explains the phrase: convenience can make alternatives appear needlessly difficult. It shapes what people find reasonable without making an explicit argument.`
   });
   return [q1, q2, q3, q4];
 }
 
-function makeDilrSet(seed) {
-  const rand = rng(seed ^ 0x53a9b71);
-  const names = shuffle(rand, ["Asha", "Bimal", "Charu", "Dev", "Esha", "Farah"]).slice(0, 5);
-  const subjects = shuffle(rand, ["Algebra", "Geometry", "Arithmetic", "Logic", "Reading"]).slice(0, 5);
-  const days = ["Mon", "Tue", "Wed", "Thu", "Fri"];
-  const order = shuffle(rand, [...names]);
-  const subjectOrder = shuffle(rand, [...subjects]);
-  const rows = days.map((day, i) => ({ day, name: order[i], subject: subjectOrder[i], score: 62 + Math.floor(rand() * 27) }));
-  const maxScore = rows.reduce((a, b) => a.score > b.score ? a : b);
-  const logicPerson = rows.find((r) => r.subject === "Logic");
-  const thu = rows.find((r) => r.day === "Thu");
-  const avg = Math.round(rows.reduce((s, r) => s + r.score, 0) / rows.length);
-  const table = `<table><thead><tr><th>Day</th><th>Student</th><th>Practice Area</th><th>Score</th></tr></thead><tbody>${rows.map((r) => `<tr><td>${r.day}</td><td>${r.name}</td><td>${r.subject}</td><td>${r.score}</td></tr>`).join("")}</tbody></table>`;
-  const passage = `
-    <p>Five students each took one focused practice session on a different weekday. Each student had a different practice area and a different score. The completed schedule is shown below. Use the table to answer the questions. In an actual CAT set, this is the final grid you would derive from the clues.</p>
-    ${table}
-  `;
-  const visual = makeBarSvg(rows);
-  const q = [];
-  q.push(makeQuestion({
-    id: `D-${seed}-1`, section: "DILR", setTitle: "Data Interpretation and Logical Reasoning", topic: "Schedule + Table", difficulty: "Moderate-Difficult",
-    passageHtml: passage, visualHtml: visual, question: "Who obtained the highest score?", options: rows.map((r) => r.name), answer: rows.findIndex((r) => r.name === maxScore.name),
-    solution: `Compare the scores in the table. The highest score is ${maxScore.score}, obtained by ${maxScore.name}.`
+function money(value) {
+  return `Rs. ${Math.round(value).toLocaleString("en-IN")}`;
+}
+
+function pct(value) {
+  return `${Number(value.toFixed(1))}%`;
+}
+
+function tableHtml(headers, rows) {
+  return `<table><thead><tr>${headers.map((h) => `<th>${h}</th>`).join("")}</tr></thead><tbody>${rows.map((row) => `<tr>${row.map((cell) => `<td>${cell}</td>`).join("")}</tr>`).join("")}</tbody></table>`;
+}
+
+function choiceSet(rand, correct, pool) {
+  const set = new Set([String(correct)]);
+  for (const value of shuffle(rand, pool.map(String))) {
+    if (set.size === 4) break;
+    set.add(value);
+  }
+  let guard = 1;
+  while (set.size < 4) set.add(fallbackOption(correct, guard++));
+  const options = shuffle(rand, [...set]);
+  return { options, answer: options.indexOf(String(correct)) };
+}
+
+function maxBy(rows, fn) {
+  return rows.reduce((best, row) => fn(row) > fn(best) ? row : best, rows[0]);
+}
+
+function minBy(rows, fn) {
+  return rows.reduce((best, row) => fn(row) < fn(best) ? row : best, rows[0]);
+}
+
+function makeDilrSet(seed, setIndex = 0) {
+  const variants = [makeDilrRevenueSet, makeDilrTransitSet, makeDilrProjectSet, makeDilrBatchSet, makeDilrScholarshipSet];
+  return variants[((setIndex % variants.length) + variants.length) % variants.length](seed, setIndex);
+}
+
+function makeDilrRevenueSet(seed, setIndex) {
+  const rand = rng(seed ^ 0x53a9b71 ^ setIndex);
+  const products = shuffle(rand, ["Atlas", "Beacon", "Crest", "Delta", "Ember", "Fusion"]).slice(0, 5);
+  const rows = products.map((name, i) => {
+    const apr = 72 + i * 9 + Math.floor(rand() * 22);
+    const may = apr + pick(rand, [-8, -3, 6, 11, 17, 23]);
+    const jun = may + pick(rand, [-6, 4, 9, 15, 21]);
+    return {
+      name,
+      apr,
+      may,
+      jun,
+      price: pick(rand, [240, 280, 320, 360, 420, 480]) + i * 10,
+      discount: pick(rand, [5, 8, 10, 12, 15])
+    };
+  });
+  const netPrice = (r) => r.price * (100 - r.discount) / 100;
+  const revenue = (r, month) => r[month] * netPrice(r);
+  const headers = ["Module", "April units", "May units", "June units", "List price", "Discount"];
+  const table = tableHtml(headers, rows.map((r) => [r.name, r.apr, r.may, r.jun, money(r.price), `${r.discount}%`]));
+  const passage = `<p>A CAT prep publisher sold five practice modules in April, May and June. The list price and discount stayed unchanged for each module throughout the three months. Net revenue for a module in a month is calculated after discount.</p>${table}`;
+  const juneMax = maxBy(rows, (r) => revenue(r, "jun"));
+  const mayTotal = rows.reduce((s, r) => s + revenue(r, "may"), 0);
+  const growthMax = maxBy(rows, (r) => (r.jun - r.apr) * 100 / r.apr);
+  const cost = pick(rand, [90, 100, 110, 120]);
+  const contributionMax = maxBy(rows, (r) => (netPrice(r) - cost) * r.jun);
+  const mayOpts = optionize(rand, money(mayTotal), [money(mayTotal + 2400), money(mayTotal - 1800), money(mayTotal + 4200)]);
+  const productPool = rows.map((r) => r.name);
+  return [
+    makeQuestion({
+      id: `D-${seed}-${setIndex}-1`, section: "DILR", setTitle: "Data Interpretation and Logical Reasoning", topic: "Revenue Table", difficulty: "Moderate-Difficult",
+      passageHtml: passage, question: "Which module had the highest net revenue in June?", ...choiceSet(rand, juneMax.name, productPool),
+      solution: `Net price = list price after discount. June net revenue is highest for ${juneMax.name}: ${juneMax.jun} × ${money(netPrice(juneMax))} = ${money(revenue(juneMax, "jun"))}.`
+    }),
+    makeQuestion({
+      id: `D-${seed}-${setIndex}-2`, section: "DILR", setTitle: "Data Interpretation and Logical Reasoning", topic: "Revenue Table", difficulty: "Difficult",
+      passageHtml: passage, question: "What was the total net revenue from all five modules in May?", ...mayOpts,
+      solution: `For each row, May net revenue = May units × list price × (1 - discount/100). Adding all five May revenues gives ${money(mayTotal)}.`
+    }),
+    makeQuestion({
+      id: `D-${seed}-${setIndex}-3`, section: "DILR", setTitle: "Data Interpretation and Logical Reasoning", topic: "Revenue Table", difficulty: "Difficult",
+      passageHtml: passage, question: "Which module had the highest percentage increase in units from April to June?", ...choiceSet(rand, growthMax.name, productPool),
+      solution: `Percentage increase = \\(\\frac{\\text{June units}-\\text{April units}}{\\text{April units}}\\times100\\). ${growthMax.name} is highest at ${pct((growthMax.jun - growthMax.apr) * 100 / growthMax.apr)}.`
+    }),
+    makeQuestion({
+      id: `D-${seed}-${setIndex}-4`, section: "DILR", setTitle: "Data Interpretation and Logical Reasoning", topic: "Revenue Table", difficulty: "Difficult",
+      passageHtml: passage, question: `If fulfilment cost is ${money(cost)} per unit in June, which module gives the highest June contribution?`, ...choiceSet(rand, contributionMax.name, productPool),
+      solution: `Contribution = (net price - fulfilment cost) × June units. ${contributionMax.name} gives the maximum contribution: (${money(netPrice(contributionMax))} - ${money(cost)}) × ${contributionMax.jun} = ${money((netPrice(contributionMax) - cost) * contributionMax.jun)}.`
+    })
+  ];
+}
+
+function makeDilrTransitSet(seed, setIndex) {
+  const rand = rng(seed ^ 0x92f315a ^ setIndex);
+  const routes = ["R1", "R2", "R3", "R4", "R5"];
+  const rows = routes.map((route, i) => ({
+    route,
+    distance: pick(rand, [84, 96, 108, 120, 132, 144]) + i * 3,
+    speed: pick(rand, [42, 45, 48, 54, 60]),
+    stops: pick(rand, [18, 24, 30, 36, 42]),
+    seats: pick(rand, [36, 40, 44, 48]),
+    occupancy: pick(rand, [65, 70, 75, 80, 85, 90]),
+    fare: pick(rand, [180, 210, 240, 270, 300])
   }));
-  q.push(makeQuestion({
-    id: `D-${seed}-2`, section: "DILR", setTitle: "Data Interpretation and Logical Reasoning", topic: "Schedule + Table", difficulty: "Moderate-Difficult",
-    passageHtml: passage, visualHtml: visual, question: "On which day was Logic practised?", options: days, answer: days.indexOf(logicPerson.day),
-    solution: `Locate the row where Practice Area is Logic. It appears on ${logicPerson.day}.`
+  const passengers = (r) => Math.round(r.seats * r.occupancy / 100);
+  const travel = (r) => r.distance * 60 / r.speed + r.stops;
+  const revenue = (r) => passengers(r) * r.fare;
+  const headers = ["Route", "Distance", "Avg speed", "Stop time", "Seats", "Occupancy", "Fare"];
+  const table = tableHtml(headers, rows.map((r) => [r.route, `${r.distance} km`, `${r.speed} km/h`, `${r.stops} min`, r.seats, `${r.occupancy}%`, money(r.fare)]));
+  const passage = `<p>Five buses leave a coaching hub at 7:00 a.m. on different routes. Travel time equals running time plus total stop time. Passenger count is rounded to the nearest whole number using the given occupancy.</p>${table}`;
+  const routePool = rows.map((r) => r.route);
+  const slowest = maxBy(rows, travel);
+  const bestRevenue = maxBy(rows, revenue);
+  const leastPerKm = minBy(rows, (r) => revenue(r) / r.distance);
+  const spread = Math.round(travel(slowest) - travel(minBy(rows, travel)));
+  const spreadOpts = optionize(rand, `${spread} min`, [`${spread + 8} min`, `${Math.max(1, spread - 7)} min`, `${spread + 14} min`]);
+  return [
+    makeQuestion({
+      id: `D-${seed}-${setIndex}-1`, section: "DILR", setTitle: "Data Interpretation and Logical Reasoning", topic: "Transit Operations", difficulty: "Moderate-Difficult",
+      passageHtml: passage, question: "Which route has the highest total travel time?", ...choiceSet(rand, slowest.route, routePool),
+      solution: `Total travel time = distance/speed × 60 + stop time. ${slowest.route} is highest at ${Math.round(travel(slowest))} minutes.`
+    }),
+    makeQuestion({
+      id: `D-${seed}-${setIndex}-2`, section: "DILR", setTitle: "Data Interpretation and Logical Reasoning", topic: "Transit Operations", difficulty: "Difficult",
+      passageHtml: passage, question: "Which route earns the highest fare revenue?", ...choiceSet(rand, bestRevenue.route, routePool),
+      solution: `Fare revenue = rounded passengers × fare. ${bestRevenue.route}: ${passengers(bestRevenue)} × ${money(bestRevenue.fare)} = ${money(revenue(bestRevenue))}, the highest.`
+    }),
+    makeQuestion({
+      id: `D-${seed}-${setIndex}-3`, section: "DILR", setTitle: "Data Interpretation and Logical Reasoning", topic: "Transit Operations", difficulty: "Difficult",
+      passageHtml: passage, question: "Which route has the lowest revenue per kilometre?", ...choiceSet(rand, leastPerKm.route, routePool),
+      solution: `Revenue per kilometre = fare revenue/distance. ${leastPerKm.route} is lowest at approximately ${money(revenue(leastPerKm) / leastPerKm.distance)} per km.`
+    }),
+    makeQuestion({
+      id: `D-${seed}-${setIndex}-4`, section: "DILR", setTitle: "Data Interpretation and Logical Reasoning", topic: "Transit Operations", difficulty: "Moderate-Difficult",
+      passageHtml: passage, question: "What is the difference between the highest and lowest total travel time?", ...spreadOpts,
+      solution: `Highest travel time = ${Math.round(travel(slowest))} min and lowest travel time = ${Math.round(travel(minBy(rows, travel)))} min. Difference = ${spread} min.`
+    })
+  ];
+}
+
+function makeDilrProjectSet(seed, setIndex) {
+  const rand = rng(seed ^ 0x81c2d3a ^ setIndex);
+  const teams = shuffle(rand, ["North", "South", "East", "West", "Central", "Metro"]).slice(0, 5);
+  const rows = teams.map((team, i) => {
+    const cases = 420 + i * 35 + Math.floor(rand() * 70);
+    const completion = pick(rand, [62, 66, 70, 74, 78, 82, 86]);
+    const analysts = pick(rand, [4, 5, 6, 7]);
+    const hours = pick(rand, [28, 30, 32, 34, 36]);
+    const rework = pick(rand, [4, 5, 6, 7, 8, 9]);
+    return { team, cases, completion, analysts, hours, rework };
+  });
+  const completed = (r) => r.cases * r.completion / 100;
+  const pending = (r) => r.cases - completed(r);
+  const productivity = (r) => completed(r) / (r.analysts * r.hours);
+  const headers = ["Team", "Cases assigned", "Completed", "Analysts", "Hours/analyst", "Rework rate"];
+  const table = tableHtml(headers, rows.map((r) => [r.team, r.cases, `${r.completion}%`, r.analysts, r.hours, `${r.rework}%`]));
+  const passage = `<p>Five review teams handled CAT application verification cases during a week. Completed percentage is applied to cases assigned. Rework rate is applied only on completed cases.</p>${table}`;
+  const teamPool = rows.map((r) => r.team);
+  const bestProductivity = maxBy(rows, productivity);
+  const totalPending = Math.round(rows.reduce((s, r) => s + pending(r), 0));
+  const reworkMax = maxBy(rows, (r) => completed(r) * r.rework / 100);
+  const rate = pick(rand, [6, 7, 8]);
+  const leastExtra = minBy(rows, (r) => pending(r) / rate);
+  const pendingOpts = optionize(rand, `${totalPending} cases`, [`${totalPending + 18} cases`, `${Math.max(1, totalPending - 21)} cases`, `${totalPending + 37} cases`]);
+  return [
+    makeQuestion({
+      id: `D-${seed}-${setIndex}-1`, section: "DILR", setTitle: "Data Interpretation and Logical Reasoning", topic: "Project Productivity", difficulty: "Difficult",
+      passageHtml: passage, question: "Which team has the highest completed cases per analyst-hour?", ...choiceSet(rand, bestProductivity.team, teamPool),
+      solution: `Productivity = completed cases/(analysts × hours). ${bestProductivity.team} is highest at ${productivity(bestProductivity).toFixed(2)} cases per analyst-hour.`
+    }),
+    makeQuestion({
+      id: `D-${seed}-${setIndex}-2`, section: "DILR", setTitle: "Data Interpretation and Logical Reasoning", topic: "Project Productivity", difficulty: "Moderate-Difficult",
+      passageHtml: passage, question: "How many cases remained pending across all teams at the end of the week?", ...pendingOpts,
+      solution: `Pending cases = assigned cases × (1 - completion%). Adding pending cases across all five teams gives approximately ${totalPending} cases.`
+    }),
+    makeQuestion({
+      id: `D-${seed}-${setIndex}-3`, section: "DILR", setTitle: "Data Interpretation and Logical Reasoning", topic: "Project Productivity", difficulty: "Difficult",
+      passageHtml: passage, question: "Which team generated the highest number of rework cases?", ...choiceSet(rand, reworkMax.team, teamPool),
+      solution: `Rework cases = completed cases × rework rate. ${reworkMax.team} is highest at approximately ${Math.round(completed(reworkMax) * reworkMax.rework / 100)} cases.`
+    }),
+    makeQuestion({
+      id: `D-${seed}-${setIndex}-4`, section: "DILR", setTitle: "Data Interpretation and Logical Reasoning", topic: "Project Productivity", difficulty: "Difficult",
+      passageHtml: passage, question: `If one extra analyst-hour clears ${rate} pending cases, which team needs the fewest extra analyst-hours to clear its pending cases?`, ...choiceSet(rand, leastExtra.team, teamPool),
+      solution: `Extra analyst-hours needed = pending cases/${rate}. ${leastExtra.team} has the lowest pending load on this basis, needing about ${(pending(leastExtra) / rate).toFixed(1)} analyst-hours.`
+    })
+  ];
+}
+
+function makeDilrBatchSet(seed, setIndex) {
+  const rand = rng(seed ^ 0x1209ab7 ^ setIndex);
+  const batches = ["A", "B", "C", "D", "E"];
+  const rows = batches.map((batch, i) => ({
+    batch,
+    enrolled: 80 + i * 11 + Math.floor(rand() * 18),
+    attendance: pick(rand, [68, 72, 76, 80, 84, 88]),
+    mockAttempt: pick(rand, [55, 60, 65, 70, 75]),
+    average: pick(rand, [38, 42, 46, 50, 54, 58]),
+    fee: pick(rand, [1800, 2100, 2400, 2700])
   }));
-  q.push(makeQuestion({
-    id: `D-${seed}-3`, section: "DILR", setTitle: "Data Interpretation and Logical Reasoning", topic: "Schedule + Table", difficulty: "Difficult",
-    passageHtml: passage, visualHtml: visual, question: "What is the difference between the highest and lowest score?", options: optionize(rand, maxScore.score - Math.min(...rows.map((r) => r.score)), [8, 12, 15, 20]).options, answer: 0,
-    solution: ""
+  const present = (r) => Math.round(r.enrolled * r.attendance / 100);
+  const mockTakers = (r) => Math.round(present(r) * r.mockAttempt / 100);
+  const scorePoints = (r) => mockTakers(r) * r.average;
+  const headers = ["Batch", "Enrolled", "Attendance", "Mock attempt", "Avg score", "Monthly fee"];
+  const table = tableHtml(headers, rows.map((r) => [r.batch, r.enrolled, `${r.attendance}%`, `${r.mockAttempt}% of present`, r.average, money(r.fee)]));
+  const passage = `<p>A coaching centre reviewed five CAT batches. Only students present in the week could attempt the mock, and the mock attempt percentage is applied to the number present.</p>${table}`;
+  const batchPool = rows.map((r) => `Batch ${r.batch}`);
+  const maxTakers = maxBy(rows, mockTakers);
+  const bestScoreLoad = maxBy(rows, scorePoints);
+  const feeLeader = maxBy(rows, (r) => present(r) * r.fee);
+  const totalTakers = rows.reduce((s, r) => s + mockTakers(r), 0);
+  const takerOpts = optionize(rand, `${totalTakers} students`, [`${totalTakers + 7} students`, `${Math.max(1, totalTakers - 6)} students`, `${totalTakers + 13} students`]);
+  return [
+    makeQuestion({
+      id: `D-${seed}-${setIndex}-1`, section: "DILR", setTitle: "Data Interpretation and Logical Reasoning", topic: "Batch Analytics", difficulty: "Moderate-Difficult",
+      passageHtml: passage, question: "Which batch had the highest number of mock takers?", ...choiceSet(rand, `Batch ${maxTakers.batch}`, batchPool),
+      solution: `Mock takers = enrolled × attendance% × mock attempt%. Batch ${maxTakers.batch} has about ${mockTakers(maxTakers)} mock takers, the highest.`
+    }),
+    makeQuestion({
+      id: `D-${seed}-${setIndex}-2`, section: "DILR", setTitle: "Data Interpretation and Logical Reasoning", topic: "Batch Analytics", difficulty: "Difficult",
+      passageHtml: passage, question: "What is the total number of mock takers across the five batches?", ...takerOpts,
+      solution: `Calculate mock takers for each batch after attendance, then add them. Total mock takers = ${totalTakers}.`
+    }),
+    makeQuestion({
+      id: `D-${seed}-${setIndex}-3`, section: "DILR", setTitle: "Data Interpretation and Logical Reasoning", topic: "Batch Analytics", difficulty: "Difficult",
+      passageHtml: passage, question: "Which batch contributed the highest total score points in the mock?", ...choiceSet(rand, `Batch ${bestScoreLoad.batch}`, batchPool),
+      solution: `Total score points = mock takers × average score. Batch ${bestScoreLoad.batch} is highest with approximately ${Math.round(scorePoints(bestScoreLoad))} score points.`
+    }),
+    makeQuestion({
+      id: `D-${seed}-${setIndex}-4`, section: "DILR", setTitle: "Data Interpretation and Logical Reasoning", topic: "Batch Analytics", difficulty: "Moderate-Difficult",
+      passageHtml: passage, question: "Which batch generated the highest fee from students present that week?", ...choiceSet(rand, `Batch ${feeLeader.batch}`, batchPool),
+      solution: `Weekly present-student fee proxy = present students × monthly fee. Batch ${feeLeader.batch} is highest: ${present(feeLeader)} × ${money(feeLeader.fee)} = ${money(present(feeLeader) * feeLeader.fee)}.`
+    })
+  ];
+}
+
+function makeDilrScholarshipSet(seed, setIndex) {
+  const rand = rng(seed ^ 0x445e021 ^ setIndex);
+  const centres = shuffle(rand, ["Jaipur", "Indore", "Surat", "Nagpur", "Kochi", "Bhopal"]).slice(0, 5);
+  const rows = centres.map((centre, i) => ({
+    centre,
+    applicants: 140 + i * 17 + Math.floor(rand() * 28),
+    quantClear: pick(rand, [48, 52, 56, 60, 64, 68]),
+    varcClear: pick(rand, [45, 50, 55, 60, 65]),
+    interviewClear: pick(rand, [35, 40, 45, 50, 55]),
+    scholarship: pick(rand, [12000, 15000, 18000, 21000])
   }));
-  const last = q[q.length - 1];
-  const diff = maxScore.score - Math.min(...rows.map((r) => r.score));
-  const diffOpts = optionize(rand, diff, [diff + 3, Math.max(1, diff - 3), diff + 5]);
-  last.options = diffOpts.options; last.answer = diffOpts.answer;
-  last.solution = `Highest score = ${maxScore.score}; lowest score = ${Math.min(...rows.map((r) => r.score))}. Difference = ${diff}.`;
-  q.push(makeQuestion({
-    id: `D-${seed}-4`, section: "DILR", setTitle: "Data Interpretation and Logical Reasoning", topic: "Schedule + Table", difficulty: "Moderate-Difficult",
-    passageHtml: passage, visualHtml: visual, question: "Which practice area was taken on Thursday?", options: subjects, answer: subjects.indexOf(thu.subject),
-    solution: `Read the Thursday row. The practice area on Thursday is ${thu.subject}.`
-  }));
-  return q;
+  const quant = (r) => Math.round(r.applicants * r.quantClear / 100);
+  const varc = (r) => Math.round(quant(r) * r.varcClear / 100);
+  const final = (r) => Math.round(varc(r) * r.interviewClear / 100);
+  const headers = ["Centre", "Applicants", "Quant clear", "VARC clear", "Interview clear", "Scholarship/student"];
+  const table = tableHtml(headers, rows.map((r) => [r.centre, r.applicants, `${r.quantClear}%`, `${r.varcClear}% of Quant clears`, `${r.interviewClear}% of VARC clears`, money(r.scholarship)]));
+  const passage = `<p>Five centres ran a three-stage scholarship process. Each percentage is applied sequentially to the candidates who reached that stage. Final selected students receive the listed scholarship amount.</p>${table}`;
+  const centrePool = rows.map((r) => r.centre);
+  const selectedMax = maxBy(rows, final);
+  const payoutMax = maxBy(rows, (r) => final(r) * r.scholarship);
+  const conversionMax = maxBy(rows, (r) => final(r) * 100 / r.applicants);
+  const totalFinal = rows.reduce((s, r) => s + final(r), 0);
+  const finalOpts = optionize(rand, `${totalFinal} students`, [`${totalFinal + 5} students`, `${Math.max(1, totalFinal - 4)} students`, `${totalFinal + 9} students`]);
+  return [
+    makeQuestion({
+      id: `D-${seed}-${setIndex}-1`, section: "DILR", setTitle: "Data Interpretation and Logical Reasoning", topic: "Selection Funnel", difficulty: "Moderate-Difficult",
+      passageHtml: passage, question: "Which centre had the highest number of final selected students?", ...choiceSet(rand, selectedMax.centre, centrePool),
+      solution: `Final selected = applicants × Quant clear% × VARC clear% × interview clear%. ${selectedMax.centre} is highest with about ${final(selectedMax)} students.`
+    }),
+    makeQuestion({
+      id: `D-${seed}-${setIndex}-2`, section: "DILR", setTitle: "Data Interpretation and Logical Reasoning", topic: "Selection Funnel", difficulty: "Difficult",
+      passageHtml: passage, question: "What is the total number of final selected students across all centres?", ...finalOpts,
+      solution: `Apply the three stage percentages sequentially for each centre and add the rounded final selections. Total = ${totalFinal} students.`
+    }),
+    makeQuestion({
+      id: `D-${seed}-${setIndex}-3`, section: "DILR", setTitle: "Data Interpretation and Logical Reasoning", topic: "Selection Funnel", difficulty: "Difficult",
+      passageHtml: passage, question: "Which centre has the highest final conversion rate from applicants?", ...choiceSet(rand, conversionMax.centre, centrePool),
+      solution: `Final conversion = final selected/applicants. ${conversionMax.centre} is highest at approximately ${pct(final(conversionMax) * 100 / conversionMax.applicants)}.`
+    }),
+    makeQuestion({
+      id: `D-${seed}-${setIndex}-4`, section: "DILR", setTitle: "Data Interpretation and Logical Reasoning", topic: "Selection Funnel", difficulty: "Difficult",
+      passageHtml: passage, question: "Which centre has the highest total scholarship payout?", ...choiceSet(rand, payoutMax.centre, centrePool),
+      solution: `Total payout = final selected × scholarship per student. ${payoutMax.centre}: ${final(payoutMax)} × ${money(payoutMax.scholarship)} = ${money(final(payoutMax) * payoutMax.scholarship)}.`
+    })
+  ];
 }
 
 function makeBarSvg(rows) {
@@ -539,7 +830,8 @@ function questionsForBlock(block, seed, offset) {
     return Array.from({ length: block.count }, (_, i) => makeVarcSet(seed + i * 9973)).flat();
   }
   if (block.kind === "dilr") {
-    return Array.from({ length: block.count }, (_, i) => makeDilrSet(seed + i * 7919)).flat();
+    const setOffset = block.id === "evening-dilr" ? 3 : 0;
+    return Array.from({ length: block.count }, (_, i) => makeDilrSet(seed + i * 7919, i + setOffset)).flat();
   }
   return Array.from({ length: block.count }, (_, i) => makeQuant(seed + 31, offset * 1000 + i));
 }
@@ -711,7 +1003,7 @@ function questionAnalysis(q, picked, ok) {
 
 function classifyError(q) {
   if (q.section === "VARC") return "Interpretation / option trap";
-  if (q.section === "DILR") return "Table reading / condition mapping";
+  if (q.section === "DILR") return "Multi-step table calculation / comparison";
   if (["Profit, Loss and Discount", "Mixtures", "Time and Work", "Speed Time Distance"].includes(q.topic)) return "Formula setup";
   if (["Algebra", "Quadratics", "Geometry", "Number System"].includes(q.topic)) return "Concept or transformation";
   return "Execution / option elimination";
@@ -729,7 +1021,11 @@ function formulaFor(q) {
     "Combinatorics": "Selection uses \\({}^nC_r\\); arrangement uses \\({}^nP_r\\).",
     "Quadratics": "For roots with sum \\(S\\) and difference \\(D\\), roots are \\(\\frac{S-D}{2}\\) and \\(\\frac{S+D}{2}\\).",
     "Probability": "Probability \\(=\\frac{\\text{favourable outcomes}}{\\text{total outcomes}}\\).",
-    "Schedule + Table": "Read the final grid carefully; compare one row/column at a time."
+    "Revenue Table": "Net revenue \\(=\\text{units}\\times\\text{list price}\\times(1-\\text{discount}/100)\\). Contribution subtracts per-unit cost before multiplying by units.",
+    "Transit Operations": "Travel time \\(=\\frac{\\text{distance}}{\\text{speed}}\\times60+\\text{stop time}\\). Revenue \\(=\\text{passengers}\\times\\text{fare}\\).",
+    "Project Productivity": "Completed work \\(=\\text{assigned}\\times\\text{completion rate}\\). Productivity \\(=\\frac{\\text{completed work}}{\\text{analysts}\\times\\text{hours}}\\).",
+    "Batch Analytics": "Mock takers \\(=\\text{enrolled}\\times\\text{attendance rate}\\times\\text{attempt rate}\\). Score load \\(=\\text{mock takers}\\times\\text{average score}\\).",
+    "Selection Funnel": "For sequential stages, multiply the starting count by each stage-clear percentage in order."
   };
   if (q.section === "VARC") return "RC method: identify conclusion, tone, and scope; reject options that are extreme, outside scope, or reverse the author's claim.";
   return map[q.topic] || "Use the conditions exactly as written; convert the wording into a small table/equation before choosing an option.";
@@ -740,7 +1036,7 @@ function betterWayFor(q, errorType) {
     return "Before looking at options, write a 6-8 word prediction of the answer. Then eliminate options that change the scope or overstate the claim.";
   }
   if (q.section === "DILR") {
-    return "Do not solve from memory. Mark the relevant row/column first, then answer only the asked comparison. Most mistakes here come from reading the right table but the wrong field.";
+    return "Do one derived column at a time, then rank only the derived value asked in the question. Most misses here come from comparing raw table numbers instead of the computed metric.";
   }
   if (q.topic === "Time and Work") return "Use fractional work instead of LCM-heavy calculations. Stop after computing completed work; only then convert the remaining fraction into days.";
   if (q.topic === "Mixtures") return "Use one variable x and build the final concentration equation directly. Avoid alligation unless two ready-made mixtures are being combined.";
@@ -754,7 +1050,7 @@ function nextStepFor(q, errorType) {
   if (errorType === "Correct") return "Keep this as a green question; revisit only during weekly revision.";
   if (errorType === "Unattempted") return "Attempt it untimed tonight. If it still feels blocked after 4 minutes, write down the first missing concept.";
   if (q.section === "VARC") return "Practise 3 RC questions focused only on option elimination and write why each wrong option is wrong.";
-  if (q.section === "DILR") return "Redo the set by rebuilding the grid/table from scratch, then compare your grid with the solution.";
+  if (q.section === "DILR") return "Redo the set by creating the missing derived column first, then compare your computed column with the solution.";
   return `Revise ${q.topic}, then solve 3 similar questions before moving to a new topic.`;
 }
 

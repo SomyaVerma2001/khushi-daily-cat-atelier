@@ -88,9 +88,21 @@ function optionize(rand, answer, distractors) {
     if (set.size === 4) break;
   }
   let guard = 1;
-  while (set.size < 4) set.add(String(Number(answer) + guard++));
+  while (set.size < 4) set.add(fallbackOption(answer, guard++));
   const options = shuffle(rand, [...set].slice(0, 4));
   return { options, answer: options.indexOf(String(answer)) };
+}
+
+function fallbackOption(answer, guard) {
+  const raw = String(answer);
+  const numeric = Number(raw);
+  if (Number.isFinite(numeric)) return String(numeric + guard);
+  const unitMatch = raw.match(/^(-?\\d+(?:\\.\\d+)?)(.*)$/);
+  if (unitMatch) {
+    const next = Number(unitMatch[1]) + guard;
+    return `${Number(next.toFixed(2))}${unitMatch[2]}`;
+  }
+  return ["Cannot be determined", "None of these", "Insufficient information", "All of these"][guard % 4];
 }
 
 function daysBetween(a, b) {

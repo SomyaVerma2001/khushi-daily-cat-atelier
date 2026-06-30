@@ -1,6 +1,11 @@
 const START_DATE = "2026-06-30";
 const CAT_DATE = "2026-11-29";
-const QUESTION_BANK_VERSION = "2026-06-30-cat-level-refresh-v2";
+const QUESTION_BANK_VERSION = "2026-06-30-real-bank-slots-v1";
+const DAILY_REQUIREMENTS = {
+  varcPassages: 4,
+  dilrSets: 5,
+  quantQuestions: 30
+};
 const STORE = {
   user: "khushi_daily_cat_user",
   sessions: "khushi_daily_cat_sessions",
@@ -140,6 +145,25 @@ function displayDate(key) {
   }).format(new Date(Date.UTC(y, m - 1, d, 12)));
 }
 
+function totalPrepDays() {
+  return Math.max(0, daysBetween(START_DATE, CAT_DATE) + 1);
+}
+
+function realBankTargets() {
+  const days = totalPrepDays();
+  return {
+    days,
+    varcPassages: days * DAILY_REQUIREMENTS.varcPassages,
+    dilrSets: days * DAILY_REQUIREMENTS.dilrSets,
+    quantQuestions: days * DAILY_REQUIREMENTS.quantQuestions,
+    totalQuestions: days * (
+      DAILY_REQUIREMENTS.varcPassages * 4 +
+      DAILY_REQUIREMENTS.dilrSets * 4 +
+      DAILY_REQUIREMENTS.quantQuestions
+    )
+  };
+}
+
 function readJson(key, fallback) {
   try { return JSON.parse(localStorage.getItem(key) || JSON.stringify(fallback)); }
   catch { return fallback; }
@@ -219,8 +243,8 @@ function show(id) {
   $("pauseBtn").classList.toggle("hidden", id !== "testScreen");
 }
 
-function makeQuestion({ id, section, setTitle, topic, difficulty, passageHtml = "", visualHtml = "", question, options, answer, solution }) {
-  return { id, section, setTitle, topic, difficulty, passageHtml, visualHtml, question, options, answer, solution };
+function makeQuestion({ id, bankSlot = "", section, setTitle, topic, difficulty, passageHtml = "", visualHtml = "", question, options, answer, solution }) {
+  return { id, bankSlot: bankSlot || id, section, setTitle, topic, difficulty, passageHtml, visualHtml, question, options, answer, solution };
 }
 
 function makeQuant(seed, index) {
@@ -465,7 +489,7 @@ const varcThemes = [
   }
 ];
 
-function makeVarcSet(seed) {
+function makeVarcSet(seed, passageIndex = 0) {
   const rand = rng(seed ^ 0xabcddcba);
   const t = pick(rand, varcThemes);
   const passage = `
@@ -477,7 +501,7 @@ function makeVarcSet(seed) {
     <p>${t.conclusion} Such a standard is deliberately modest. It does not demand that institutions preserve every old ritual, nor does it romanticise difficulty as a virtue. It asks instead for designs, policies, and habits that keep judgment visible. A society that can revise its tools while still examining the forms of attention those tools reward is less likely to confuse progress with mere smoothness.</p>
   `;
   const q1 = makeQuestion({
-    id: `V-${seed}-1`, section: "VARC", setTitle: "Reading Comprehension", topic: t.topic, difficulty: "Difficult",
+    id: `V-${seed}-1`, bankSlot: `VARC-${String(passageIndex + 1).padStart(4, "0")}-Q1`, section: "VARC", setTitle: "Reading Comprehension", topic: t.topic, difficulty: "Difficult",
     passageHtml: passage, question: "Which of the following best captures the central argument of the passage?",
     options: [
       `New arrangements around ${t.topic} should be resisted because they inevitably destroy older forms of judgment.`,
@@ -489,7 +513,7 @@ function makeVarcSet(seed) {
     solution: `The passage is not anti-change and not pro-nostalgia. Its main concern is the kind of judgment and attention produced by new arrangements. Option B captures that balanced claim.`
   });
   const q2 = makeQuestion({
-    id: `V-${seed}-2`, section: "VARC", setTitle: "Reading Comprehension", topic: t.topic, difficulty: "Moderate-Difficult",
+    id: `V-${seed}-2`, bankSlot: `VARC-${String(passageIndex + 1).padStart(4, "0")}-Q2`, section: "VARC", setTitle: "Reading Comprehension", topic: t.topic, difficulty: "Moderate-Difficult",
     passageHtml: passage, question: "According to the passage, why can complaints about change be exaggerated and still point toward something real?",
     options: [
       "Because every complaint about change contains reliable historical evidence.",
@@ -501,7 +525,7 @@ function makeVarcSet(seed) {
     solution: `Paragraph 2 says critics may focus on visible replacements, but the subtler loss may be the disappearance of situations in which people practised judgment, patience, or interpretation.`
   });
   const q3 = makeQuestion({
-    id: `V-${seed}-3`, section: "VARC", setTitle: "Reading Comprehension", topic: t.topic, difficulty: "Difficult",
+    id: `V-${seed}-3`, bankSlot: `VARC-${String(passageIndex + 1).padStart(4, "0")}-Q3`, section: "VARC", setTitle: "Reading Comprehension", topic: t.topic, difficulty: "Difficult",
     passageHtml: passage, question: "Which of the following would most weaken the author's concern?",
     options: [
       `Evidence that the new arrangement in ${t.topic} makes access faster for a much larger population.`,
@@ -513,7 +537,7 @@ function makeVarcSet(seed) {
     solution: `The author's worry is not speed or newness by itself; it is the weakening of judgment. Evidence that the new system strengthens judgment directly weakens the concern.`
   });
   const q4 = makeQuestion({
-    id: `V-${seed}-4`, section: "VARC", setTitle: "Reading Comprehension", topic: t.topic, difficulty: "Difficult",
+    id: `V-${seed}-4`, bankSlot: `VARC-${String(passageIndex + 1).padStart(4, "0")}-Q4`, section: "VARC", setTitle: "Reading Comprehension", topic: t.topic, difficulty: "Difficult",
     passageHtml: passage, question: "The phrase \"convenience also has a political talent\" most nearly means that convenience",
     options: [
       "can make one arrangement seem natural and alternatives seem unreasonable without openly arguing for that conclusion.",
@@ -561,7 +585,8 @@ function minBy(rows, fn) {
 
 function makeDilrSet(seed, setIndex = 0) {
   const variants = [makeDilrRevenueSet, makeDilrTransitSet, makeDilrProjectSet, makeDilrBatchSet, makeDilrScholarshipSet];
-  return variants[((setIndex % variants.length) + variants.length) % variants.length](seed, setIndex);
+  return variants[((setIndex % variants.length) + variants.length) % variants.length](seed, setIndex)
+    .map((q, i) => ({ ...q, bankSlot: `DILR-${String(setIndex + 1).padStart(4, "0")}-Q${i + 1}` }));
 }
 
 function makeDilrRevenueSet(seed, setIndex) {
@@ -856,13 +881,20 @@ function refreshOutdatedSessions(dateKey = todayKey()) {
 
 function questionsForBlock(block, seed, offset) {
   if (block.kind === "varc") {
-    return Array.from({ length: block.count }, (_, i) => makeVarcSet(seed + i * 9973)).flat();
+    const start = offset * DAILY_REQUIREMENTS.varcPassages;
+    return Array.from({ length: block.count }, (_, i) => makeVarcSet(seed + i * 9973, start + i)).flat();
   }
   if (block.kind === "dilr") {
     const setOffset = block.id === "evening-dilr" ? 3 : 0;
-    return Array.from({ length: block.count }, (_, i) => makeDilrSet(seed + i * 7919, i + setOffset)).flat();
+    const start = offset * DAILY_REQUIREMENTS.dilrSets + setOffset;
+    return Array.from({ length: block.count }, (_, i) => makeDilrSet(seed + i * 7919, start + i)).flat();
   }
-  return Array.from({ length: block.count }, (_, i) => makeQuant(seed + 31, offset * 1000 + i));
+  const start = offset * DAILY_REQUIREMENTS.quantQuestions;
+  return Array.from({ length: block.count }, (_, i) => {
+    const q = makeQuant(seed + 31, start + i);
+    q.bankSlot = `QUANT-${String(start + i + 1).padStart(4, "0")}`;
+    return q;
+  });
 }
 
 function buildBlockDeck(dateKey = todayKey(), blockId = DAILY_BLOCKS[0].id) {
@@ -1008,6 +1040,7 @@ function questionAnalysis(q, picked, ok) {
   const errorType = ok ? "Correct" : unattempted ? "Unattempted" : classifyError(q);
   return {
     id: q.id,
+    bankSlot: q.bankSlot,
     section: q.section,
     setTitle: q.setTitle,
     topic: q.topic,
@@ -1121,7 +1154,7 @@ function renderQuestionAnalysisCard(item, index) {
     <article class="mini-analysis ${item.correct ? "correct" : "wrong"}">
       <div class="report-question-head">
         <div>
-          <div class="review-meta">Q${index + 1} • ${item.section} • ${item.topic} • ${item.difficulty}</div>
+          <div class="review-meta">Q${index + 1} • ${item.bankSlot || item.id} • ${item.section} • ${item.topic} • ${item.difficulty}</div>
           <h4>${normalizeMath(item.question)}</h4>
         </div>
         <span class="result-chip ${item.correct ? "correct" : "wrong"}">${item.errorType}</span>
@@ -1170,7 +1203,7 @@ function renderReview() {
     const picked = responses[q.id];
     const ok = picked === q.answer;
     return `<article class="review-item ${ok ? "correct" : "wrong"}">
-      <div class="review-meta">${i + 1}. ${q.section} • ${q.topic} • ${q.difficulty}</div>
+      <div class="review-meta">${i + 1}. ${q.bankSlot || q.id} • ${q.section} • ${q.topic} • ${q.difficulty}</div>
       <h3>${normalizeMath(q.question)}</h3>
       ${q.passageHtml ? `<div class="solution">${q.passageHtml}</div>` : ""}
       ${q.visualHtml ? `<div class="visual-panel">${q.visualHtml}</div>` : ""}
@@ -1216,6 +1249,7 @@ function sendEmailReport() {
     ...report.items.map((item, i) => [
       ``,
       `Q${i + 1}. ${item.section} - ${item.topic} - ${item.difficulty}`,
+      `Bank slot: ${item.bankSlot || item.id}`,
       item.passageHtml ? `Passage / set data: ${textOnly(item.passageHtml)}` : "",
       `Question: ${item.question}`,
       `Options:`,
@@ -1265,15 +1299,10 @@ function renderHome() {
     return { block, session, done: Boolean(session?.report), started: Boolean(session && !session.report) };
   });
   const doneToday = blockStates.filter((state) => state.done).length;
-  const totalQuestionsPerDay = DAILY_BLOCKS.reduce((sum, block) => {
-    if (block.kind === "varc") return sum + block.count * 4;
-    if (block.kind === "dilr") return sum + block.count * 4;
-    return sum + block.count;
-  }, 0);
-  const totalDays = Math.max(0, daysBetween(START_DATE, CAT_DATE) + 1);
+  const targets = realBankTargets();
   $("todayLine").textContent = `${displayDate(date)} is ready: Morning VARC, Morning DILR, Evening DILR, and Evening Quant. Completed blocks lock until tomorrow's reset.`;
   $("daysLeft").textContent = Math.max(0, daysBetween(date, CAT_DATE) + 1);
-  $("bankCount").textContent = `${(totalQuestionsPerDay * totalDays).toLocaleString("en-IN")}+`;
+  $("bankCount").textContent = `${targets.totalQuestions.toLocaleString("en-IN")}+`;
   $("doneCount").textContent = `${doneToday}/${DAILY_BLOCKS.length}`;
   $("taskGrid").innerHTML = blockStates.map(({ block, done, started }) => `
     <button class="task-card ${done ? "done" : ""}" data-block="${block.id}" ${done ? "disabled" : ""}>
@@ -1412,7 +1441,10 @@ $("reportBtn").onclick = () => {
   renderReport(s.report);
   show("reportScreen");
 };
-$("previewBtn").onclick = () => alert("Daily target till 29 Nov 2026: Morning VARC: 4 passages, Morning DILR: 3 sets, Evening DILR: 2 sets, Evening Quant: 30 questions. Each block locks after completion and resets the next day.");
+$("previewBtn").onclick = () => {
+  const t = realBankTargets();
+  alert(`Daily target till 29 Nov 2026:\n\nMorning VARC: 4 passages\nMorning DILR: 3 sets\nEvening DILR: 2 sets\nEvening Quant: 30 questions\n\nReal no-repeat bank target:\n${t.varcPassages} VARC passages (${t.varcPassages * 4} questions)\n${t.dilrSets} DILR sets (${t.dilrSets * 4} questions)\n${t.quantQuestions} Quant questions\n${t.totalQuestions} total question-level entries\n\nEach block locks after completion and resets the next day in IST.`);
+};
 $("taskGrid").onclick = (e) => {
   const card = e.target.closest("[data-block]");
   if (!card || card.disabled) return;

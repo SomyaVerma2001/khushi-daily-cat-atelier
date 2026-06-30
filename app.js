@@ -881,6 +881,11 @@ function latestReportSession() {
   })[0];
 }
 
+async function keepFirebaseLoginLocal() {
+  if (!window.firebase?.auth) return;
+  await firebase.auth().setPersistence(firebase.auth.Auth.Persistence.LOCAL);
+}
+
 async function googleLogin() {
   const cfg = window.KHUSHI_CAT_CONFIG || {};
   if (!cfg.firebase?.apiKey || !window.firebase) {
@@ -891,6 +896,7 @@ async function googleLogin() {
   try {
     if (!firebase.apps.length) firebase.initializeApp(cfg.firebase);
     firebaseReady = true;
+    await keepFirebaseLoginLocal();
     const provider = new firebase.auth.GoogleAuthProvider();
     provider.setCustomParameters({ prompt: "select_account" });
     let result;
@@ -927,10 +933,17 @@ function localLogin() {
 
 function boot() {
   const cfg = window.KHUSHI_CAT_CONFIG || {};
+  user = readJson(STORE.user, null);
+  if (user) {
+    $("logoutBtn").classList.remove("hidden");
+    renderHome();
+    show("homeScreen");
+  }
   if (cfg.firebase?.apiKey && window.firebase) {
     try {
       if (!firebase.apps.length) firebase.initializeApp(cfg.firebase);
       firebaseReady = true;
+      keepFirebaseLoginLocal().catch((err) => console.warn("Firebase persistence skipped", err));
       firebase.auth().onAuthStateChanged((fbUser) => {
         if (!fbUser) return;
         user = {
@@ -962,12 +975,6 @@ function boot() {
     } catch (err) {
       console.warn("Firebase init skipped", err);
     }
-  }
-  user = readJson(STORE.user, null);
-  if (user) {
-    $("logoutBtn").classList.remove("hidden");
-    renderHome();
-    show("homeScreen");
   }
 }
 

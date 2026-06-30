@@ -8,6 +8,7 @@ const STORE = {
 
 const $ = (id) => document.getElementById(id);
 const letters = "ABCD";
+const IST_TIME_ZONE = "Asia/Kolkata";
 const DAILY_BLOCKS = [
   {
     id: "morning-varc",
@@ -94,23 +95,36 @@ function optionize(rand, answer, distractors) {
 
 function daysBetween(a, b) {
   const ms = 24 * 60 * 60 * 1000;
-  return Math.floor((new Date(b + "T00:00:00") - new Date(a + "T00:00:00")) / ms);
+  const [ay, am, ad] = a.split("-").map(Number);
+  const [by, bm, bd] = b.split("-").map(Number);
+  return Math.floor((Date.UTC(by, bm - 1, bd) - Date.UTC(ay, am - 1, ad)) / ms);
+}
+
+function dateKeyInIst(date = new Date()) {
+  const parts = new Intl.DateTimeFormat("en-GB", {
+    timeZone: IST_TIME_ZONE,
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit"
+  }).formatToParts(date).reduce((acc, part) => {
+    if (part.type !== "literal") acc[part.type] = part.value;
+    return acc;
+  }, {});
+  return `${parts.year}-${parts.month}-${parts.day}`;
 }
 
 function todayKey() {
-  const now = new Date();
-  const y = now.getFullYear();
-  const m = String(now.getMonth() + 1).padStart(2, "0");
-  const d = String(now.getDate()).padStart(2, "0");
-  return `${y}-${m}-${d}`;
+  return dateKeyInIst();
 }
 
 function displayDate(key) {
-  return new Date(key + "T00:00:00").toLocaleDateString("en-IN", {
+  const [y, m, d] = key.split("-").map(Number);
+  return new Intl.DateTimeFormat("en-IN", {
+    timeZone: IST_TIME_ZONE,
     day: "numeric",
     month: "short",
     year: "numeric"
-  });
+  }).format(new Date(Date.UTC(y, m - 1, d, 12)));
 }
 
 function readJson(key, fallback) {

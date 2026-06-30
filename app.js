@@ -1,5 +1,5 @@
 const START_DATE = "2026-06-30";
-const CAT_DATE = "2026-11-30";
+const CAT_DATE = "2026-11-29";
 const STORE = {
   user: "khushi_daily_cat_user",
   sessions: "khushi_daily_cat_sessions",
@@ -8,6 +8,40 @@ const STORE = {
 
 const $ = (id) => document.getElementById(id);
 const letters = "ABCD";
+const DAILY_BLOCKS = [
+  {
+    id: "morning-varc",
+    title: "Morning VARC",
+    target: "4 passages in 1 hour",
+    description: "4 RC passages • 16 questions",
+    kind: "varc",
+    count: 4
+  },
+  {
+    id: "morning-dilr",
+    title: "Morning DILR",
+    target: "3 sets in 1 hour",
+    description: "3 DILR sets • 12 questions",
+    kind: "dilr",
+    count: 3
+  },
+  {
+    id: "evening-dilr",
+    title: "Evening DILR",
+    target: "2 sets in the evening",
+    description: "2 DILR sets • 8 questions",
+    kind: "dilr",
+    count: 2
+  },
+  {
+    id: "evening-quant",
+    title: "Evening Quant",
+    target: "30 Quant questions",
+    description: "30 Quant questions • mixed topics",
+    kind: "quant",
+    count: 30
+  }
+];
 
 let user = null;
 let deck = null;
@@ -402,40 +436,83 @@ function makeBarSvg(rows) {
   </svg>`;
 }
 
-function buildDailyDeck(dateKey = todayKey()) {
-  const offset = Math.max(0, daysBetween(START_DATE, dateKey));
-  const seed = hashString(`khushi-${dateKey}-${offset}`);
-  const varc = makeVarcSet(seed);
-  const dilr = makeDilrSet(seed + 17);
-  const quant = Array.from({ length: 15 }, (_, i) => makeQuant(seed + 31, offset * 15 + i));
-  return { dateKey, createdAt: new Date().toISOString(), submittedAt: null, questions: [...varc, ...dilr, ...quant] };
+function getBlock(blockId) {
+  return DAILY_BLOCKS.find((block) => block.id === blockId) || DAILY_BLOCKS[0];
 }
 
-function getSession(dateKey = todayKey()) {
+function sessionKey(dateKey, blockId) {
+  return `${dateKey}__${blockId}`;
+}
+
+function questionsForBlock(block, seed, offset) {
+  if (block.kind === "varc") {
+    return Array.from({ length: block.count }, (_, i) => makeVarcSet(seed + i * 9973)).flat();
+  }
+  if (block.kind === "dilr") {
+    return Array.from({ length: block.count }, (_, i) => makeDilrSet(seed + i * 7919)).flat();
+  }
+  return Array.from({ length: block.count }, (_, i) => makeQuant(seed + 31, offset * 1000 + i));
+}
+
+function buildBlockDeck(dateKey = todayKey(), blockId = DAILY_BLOCKS[0].id) {
+  const offset = Math.max(0, daysBetween(START_DATE, dateKey));
+  const block = getBlock(blockId);
+  const seed = hashString(`khushi-${dateKey}-${block.id}-${offset}`);
+  return {
+    dateKey,
+    blockId: block.id,
+    blockTitle: block.title,
+    target: block.target,
+    sessionKey: sessionKey(dateKey, block.id),
+    createdAt: new Date().toISOString(),
+    submittedAt: null,
+    questions: questionsForBlock(block, seed, offset)
+  };
+}
+
+function buildDailyDeck(dateKey = todayKey()) {
+  return {
+    dateKey,
+    createdAt: new Date().toISOString(),
+    submittedAt: null,
+    questions: DAILY_BLOCKS.flatMap((block) => buildBlockDeck(dateKey, block.id).questions)
+  };
+}
+
+function getSession(dateKey = todayKey(), blockId = DAILY_BLOCKS[0].id) {
   const sessions = readJson(STORE.sessions, {});
-  if (!sessions[dateKey]) {
-    const fresh = buildDailyDeck(dateKey);
-    sessions[dateKey] = { deck: fresh, responses: {}, report: null };
+  const key = sessionKey(dateKey, blockId);
+  if (!sessions[key]) {
+    const fresh = buildBlockDeck(dateKey, blockId);
+    sessions[key] = { deck: fresh, responses: {}, report: null };
     writeJson(STORE.sessions, sessions);
   }
-  return sessions[dateKey];
+  return sessions[key];
 }
 
 function saveCurrentSession() {
   const sessions = readJson(STORE.sessions, {});
-  sessions[deck.dateKey] = sessions[deck.dateKey] || {};
-  sessions[deck.dateKey].deck = deck;
-  sessions[deck.dateKey].responses = responses;
-  sessions[deck.dateKey].report = sessions[deck.dateKey].report || null;
+  const key = deck.sessionKey || sessionKey(deck.dateKey, deck.blockId || DAILY_BLOCKS[0].id);
+  sessions[key] = sessions[key] || {};
+  sessions[key].deck = deck;
+  sessions[key].responses = responses;
+  sessions[key].report = sessions[key].report || null;
   writeJson(STORE.sessions, sessions);
-  writeJson(STORE.active, { dateKey: deck.dateKey, activeIndex, paused });
+  writeJson(STORE.active, { dateKey: deck.dateKey, blockId: deck.blockId, sessionKey: key, activeIndex, paused });
 }
 
-function startSession() {
-  const session = getSession(todayKey());
+function startSession(blockId = DAILY_BLOCKS[0].id) {
+  const dateKey = todayKey();
+  const session = getSession(dateKey, blockId);
+  if (session.report) {
+    alert("This block is already complete for today. Fresh questions unlock tomorrow.");
+    renderHome();
+    return;
+  }
   deck = session.deck;
   responses = session.responses || {};
-  activeIndex = readJson(STORE.active, {}).dateKey === deck.dateKey ? readJson(STORE.active, {}).activeIndex || 0 : 0;
+  const active = readJson(STORE.active, {});
+  activeIndex = active.sessionKey === deck.sessionKey ? active.activeIndex || 0 : 0;
   paused = false;
   show("testScreen");
   renderQuestion();
@@ -444,8 +521,8 @@ function startSession() {
 function renderQuestion() {
   const q = deck.questions[activeIndex];
   $("sectionLabel").textContent = `${q.section} • ${q.topic}`;
-  $("questionTitle").textContent = q.setTitle;
-  $("sourceLabel").textContent = `${q.difficulty} • Daily generated verified practice`;
+  $("questionTitle").textContent = `${deck.blockTitle || q.setTitle}`;
+  $("sourceLabel").textContent = `${deck.target || q.difficulty} • ${q.difficulty} • Daily generated verified practice`;
   $("progressText").textContent = `Question ${activeIndex + 1} of ${deck.questions.length}`;
   $("passagePanel").innerHTML = q.passageHtml || "<p>No passage is required for this Quant question.</p>";
   $("questionText").textContent = q.question;
@@ -467,11 +544,12 @@ function selectOption(index) {
 }
 
 function finishSession() {
-  if (!confirm("Finish today's practice and unlock solutions?")) return;
+  if (!confirm(`Finish ${deck.blockTitle || "today's practice"} and unlock solutions? This block will reset tomorrow.`)) return;
   const report = makeReport();
   const sessions = readJson(STORE.sessions, {});
-  sessions[deck.dateKey] = { deck, responses, report };
-  sessions[deck.dateKey].deck.submittedAt = new Date().toISOString();
+  const key = deck.sessionKey || sessionKey(deck.dateKey, deck.blockId || DAILY_BLOCKS[0].id);
+  sessions[key] = { deck, responses, report };
+  sessions[key].deck.submittedAt = new Date().toISOString();
   writeJson(STORE.sessions, sessions);
   renderReport(report);
   show("reportScreen");
@@ -496,7 +574,19 @@ function makeReport() {
   }
   const accuracy = attempted ? Math.round(correct * 100 / attempted) : 0;
   const weakest = Object.entries(wrongTopics).sort((a, b) => b[1] - a[1]).slice(0, 4);
-  return { dateKey: deck.dateKey, total: deck.questions.length, attempted, correct, accuracy, bySection, weakest, items };
+  return {
+    dateKey: deck.dateKey,
+    blockId: deck.blockId,
+    blockTitle: deck.blockTitle,
+    target: deck.target,
+    total: deck.questions.length,
+    attempted,
+    correct,
+    accuracy,
+    bySection,
+    weakest,
+    items
+  };
 }
 
 function questionAnalysis(q, picked, ok) {
@@ -573,7 +663,7 @@ function renderReport(report) {
     const picked = responses[q.id];
     return questionAnalysis(q, picked, picked === q.answer);
   });
-  $("reportTitle").textContent = `Analysis for ${displayDate(report.dateKey)}`;
+  $("reportTitle").textContent = `${report.blockTitle || "Analysis"} • ${displayDate(report.dateKey)}`;
   $("scoreSummary").innerHTML = `
     <div><b>${report.correct}/${report.total}</b><span>correct</span></div>
     <div><b>${report.attempted}</b><span>attempted</span></div>
@@ -619,11 +709,15 @@ function renderReview() {
 
 function renderHistory() {
   const sessions = readJson(STORE.sessions, {});
-  const rows = Object.values(sessions).sort((a, b) => b.deck.dateKey.localeCompare(a.deck.dateKey));
+  const rows = Object.values(sessions).sort((a, b) => {
+    const ad = a.deck.submittedAt || a.deck.createdAt || a.deck.dateKey;
+    const bd = b.deck.submittedAt || b.deck.createdAt || b.deck.dateKey;
+    return bd.localeCompare(ad);
+  });
   $("historyList").innerHTML = rows.length ? rows.map((s) => {
     const r = s.report;
     return `<article class="review-item">
-      <div class="review-meta">${displayDate(s.deck.dateKey)}</div>
+      <div class="review-meta">${displayDate(s.deck.dateKey)} • ${s.deck.blockTitle || "Daily set"}</div>
       <h3>${r ? `${r.correct}/${r.total} correct • ${r.accuracy}% accuracy` : "Started, not finished"}</h3>
       <p>${Object.keys(s.responses || {}).length} responses saved.</p>
     </article>`;
@@ -633,7 +727,7 @@ function renderHistory() {
 function sendEmailReport() {
   const report = makeReport();
   const lines = [
-    `Khushi's CAT report for ${displayDate(report.dateKey)}`,
+    `Khushi's CAT report: ${report.blockTitle || "Daily set"} for ${displayDate(report.dateKey)}`,
     ``,
     `Correct: ${report.correct}/${report.total}`,
     `Attempted: ${report.attempted}`,
@@ -667,18 +761,46 @@ function sendEmailReport() {
 function downloadPdfReport() {
   const originalTitle = document.title;
   const dateLabel = deck?.dateKey ? displayDate(deck.dateKey).replace(/ /g, "-") : "today";
-  document.title = `Khushi-CAT-Report-${dateLabel}`;
+  const blockLabel = (deck?.blockTitle || "Daily").replace(/\s+/g, "-");
+  document.title = `Khushi-CAT-${blockLabel}-Report-${dateLabel}`;
   window.print();
   setTimeout(() => { document.title = originalTitle; }, 600);
 }
 
 function renderHome() {
   const date = todayKey();
-  $("todayLine").textContent = `${displayDate(date)} is ready: 1 VARC set, 1 DILR set, and 15 Quant questions.`;
-  $("daysLeft").textContent = Math.max(0, daysBetween(date, CAT_DATE));
-  $("bankCount").textContent = "700+";
   const sessions = readJson(STORE.sessions, {});
-  $("doneCount").textContent = Object.values(sessions).filter((s) => s.report).length;
+  const blockStates = DAILY_BLOCKS.map((block) => {
+    const session = sessions[sessionKey(date, block.id)];
+    return { block, session, done: Boolean(session?.report), started: Boolean(session && !session.report) };
+  });
+  const doneToday = blockStates.filter((state) => state.done).length;
+  const totalQuestionsPerDay = DAILY_BLOCKS.reduce((sum, block) => {
+    if (block.kind === "varc") return sum + block.count * 4;
+    if (block.kind === "dilr") return sum + block.count * 4;
+    return sum + block.count;
+  }, 0);
+  const totalDays = Math.max(0, daysBetween(START_DATE, CAT_DATE) + 1);
+  $("todayLine").textContent = `${displayDate(date)} is ready: Morning VARC, Morning DILR, Evening DILR, and Evening Quant. Completed blocks lock until tomorrow's reset.`;
+  $("daysLeft").textContent = Math.max(0, daysBetween(date, CAT_DATE) + 1);
+  $("bankCount").textContent = `${(totalQuestionsPerDay * totalDays).toLocaleString("en-IN")}+`;
+  $("doneCount").textContent = `${doneToday}/${DAILY_BLOCKS.length}`;
+  $("taskGrid").innerHTML = blockStates.map(({ block, done, started }) => `
+    <button class="task-card ${done ? "done" : ""}" data-block="${block.id}" ${done ? "disabled" : ""}>
+      <span class="task-status">${done ? "Done for today" : started ? "Resume" : "Available now"}</span>
+      <b>${block.title}</b>
+      <span>${block.target}</span>
+      <small>${block.description}</small>
+    </button>`).join("");
+}
+
+function latestReportSession() {
+  const sessions = Object.values(readJson(STORE.sessions, {})).filter((s) => s.report);
+  return sessions.sort((a, b) => {
+    const ad = a.deck.submittedAt || a.deck.createdAt || a.deck.dateKey;
+    const bd = b.deck.submittedAt || b.deck.createdAt || b.deck.dateKey;
+    return bd.localeCompare(ad);
+  })[0];
 }
 
 async function googleLogin() {
@@ -780,17 +902,25 @@ $("logoutBtn").onclick = async () => {
   localStorage.removeItem(STORE.user);
   location.reload();
 };
-$("startTodayBtn").onclick = startSession;
 $("mainMenuBtn").onclick = () => { renderHome(); show(user ? "homeScreen" : "loginScreen"); };
 $("historyBtn").onclick = () => { renderHistory(); show("historyScreen"); };
 $("backHomeBtn").onclick = () => { renderHome(); show("homeScreen"); };
 $("reportBtn").onclick = () => {
-  const s = getSession(todayKey());
+  const s = latestReportSession();
+  if (!s) {
+    alert("No completed report yet. Finish a block first.");
+    return;
+  }
   deck = s.deck; responses = s.responses || {};
-  if (s.report) renderReport(s.report); else renderReport(makeReport());
+  renderReport(s.report);
   show("reportScreen");
 };
-$("previewBtn").onclick = () => alert("Today's set: VARC RC (4), DILR table/logic set (4), Quant mixed moderate-difficult (15).");
+$("previewBtn").onclick = () => alert("Daily target till 29 Nov 2026: Morning VARC: 4 passages, Morning DILR: 3 sets, Evening DILR: 2 sets, Evening Quant: 30 questions. Each block locks after completion and resets the next day.");
+$("taskGrid").onclick = (e) => {
+  const card = e.target.closest("[data-block]");
+  if (!card || card.disabled) return;
+  startSession(card.dataset.block);
+};
 $("optionsPanel").onclick = (e) => {
   const b = e.target.closest("[data-option]");
   if (b) selectOption(Number(b.dataset.option));

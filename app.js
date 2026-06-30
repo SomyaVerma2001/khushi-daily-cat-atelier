@@ -1,5 +1,6 @@
 const START_DATE = "2026-06-30";
 const CAT_DATE = "2026-11-29";
+const QUESTION_BANK_VERSION = "2026-06-30-cat-level-refresh-v2";
 const STORE = {
   user: "khushi_daily_cat_user",
   sessions: "khushi_daily_cat_sessions",
@@ -825,6 +826,34 @@ function sessionKey(dateKey, blockId) {
   return `${dateKey}__${blockId}`;
 }
 
+function isCurrentQuestionBank(session) {
+  return session?.deck?.questionBankVersion === QUESTION_BANK_VERSION;
+}
+
+function refreshOutdatedSessions(dateKey = todayKey()) {
+  const sessions = readJson(STORE.sessions, {});
+  let changed = false;
+  for (const block of DAILY_BLOCKS) {
+    const key = sessionKey(dateKey, block.id);
+    const session = sessions[key];
+    if (session && !isCurrentQuestionBank(session)) {
+      sessions[key] = {
+        deck: buildBlockDeck(dateKey, block.id),
+        responses: {},
+        report: null,
+        refreshedFromVersion: session.deck?.questionBankVersion || "legacy"
+      };
+      changed = true;
+    }
+  }
+  if (changed) {
+    writeJson(STORE.sessions, sessions);
+    const active = readJson(STORE.active, {});
+    if (active.dateKey === dateKey) localStorage.removeItem(STORE.active);
+  }
+  return sessions;
+}
+
 function questionsForBlock(block, seed, offset) {
   if (block.kind === "varc") {
     return Array.from({ length: block.count }, (_, i) => makeVarcSet(seed + i * 9973)).flat();
@@ -846,6 +875,7 @@ function buildBlockDeck(dateKey = todayKey(), blockId = DAILY_BLOCKS[0].id) {
     blockTitle: block.title,
     target: block.target,
     sessionKey: sessionKey(dateKey, block.id),
+    questionBankVersion: QUESTION_BANK_VERSION,
     createdAt: new Date().toISOString(),
     submittedAt: null,
     questions: questionsForBlock(block, seed, offset)
@@ -864,7 +894,7 @@ function buildDailyDeck(dateKey = todayKey()) {
 function getSession(dateKey = todayKey(), blockId = DAILY_BLOCKS[0].id) {
   const sessions = readJson(STORE.sessions, {});
   const key = sessionKey(dateKey, blockId);
-  if (!sessions[key]) {
+  if (!sessions[key] || !isCurrentQuestionBank(sessions[key])) {
     const fresh = buildBlockDeck(dateKey, blockId);
     sessions[key] = { deck: fresh, responses: {}, report: null };
     writeJson(STORE.sessions, sessions);
@@ -875,6 +905,7 @@ function getSession(dateKey = todayKey(), blockId = DAILY_BLOCKS[0].id) {
 function saveCurrentSession() {
   const sessions = readJson(STORE.sessions, {});
   const key = deck.sessionKey || sessionKey(deck.dateKey, deck.blockId || DAILY_BLOCKS[0].id);
+  deck.questionBankVersion = QUESTION_BANK_VERSION;
   sessions[key] = sessions[key] || {};
   sessions[key].deck = deck;
   sessions[key].responses = responses;
@@ -1228,7 +1259,7 @@ function downloadPdfReport() {
 
 function renderHome() {
   const date = todayKey();
-  const sessions = readJson(STORE.sessions, {});
+  const sessions = refreshOutdatedSessions(date);
   const blockStates = DAILY_BLOCKS.map((block) => {
     const session = sessions[sessionKey(date, block.id)];
     return { block, session, done: Boolean(session?.report), started: Boolean(session && !session.report) };

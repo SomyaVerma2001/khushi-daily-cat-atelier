@@ -664,6 +664,14 @@ function sendEmailReport() {
   location.href = `mailto:${cfg?.toEmail || ""}?subject=${subject}&body=${body}`;
 }
 
+function downloadPdfReport() {
+  const originalTitle = document.title;
+  const dateLabel = deck?.dateKey ? displayDate(deck.dateKey).replace(/ /g, "-") : "today";
+  document.title = `Khushi-CAT-Report-${dateLabel}`;
+  window.print();
+  setTimeout(() => { document.title = originalTitle; }, 600);
+}
+
 function renderHome() {
   const date = todayKey();
   $("todayLine").textContent = `${displayDate(date)} is ready: 1 VARC set, 1 DILR set, and 15 Quant questions.`;
@@ -796,5 +804,6 @@ $("resumeBtn").onclick = () => { paused = false; show("testScreen"); renderQuest
 $("reviewBtn").onclick = () => { renderReview(); show("reviewScreen"); };
 $("backReportBtn").onclick = () => { renderReport(makeReport()); show("reportScreen"); };
 $("emailReportBtn").onclick = sendEmailReport;
+$("pdfReportBtn").onclick = downloadPdfReport;
 
 boot();

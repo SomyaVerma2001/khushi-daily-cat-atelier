@@ -161,3 +161,156 @@ code { color: var(--cyan); }
   .topbar, .cat-header, .submit-bar, .review-head { align-items: stretch; flex-direction: column; }
   .score-grid, .stats-row { grid-template-columns: 1fr; }
 }
+
+@media print {
+  @page {
+    size: A4;
+    margin: 14mm;
+  }
+
+  :root {
+    --ink: #172033;
+    --muted: #5d6678;
+    --amber: #9b6518;
+    --cyan: #047f76;
+    --green: #137744;
+    --rose: #b42445;
+    --line: #d9deea;
+  }
+
+  html, body {
+    background: #fff !important;
+    color: var(--ink) !important;
+    min-height: auto;
+  }
+
+  body {
+    font-size: 11.5pt;
+    line-height: 1.45;
+  }
+
+  .app-shell {
+    min-height: auto;
+    padding: 0;
+  }
+
+  .topbar,
+  .report-actions,
+  #loginScreen,
+  #homeScreen,
+  #testScreen,
+  #pausedScreen,
+  #reviewScreen,
+  #historyScreen {
+    display: none !important;
+  }
+
+  #reportScreen {
+    display: block !important;
+  }
+
+  .report-wrap {
+    max-width: none;
+    margin: 0;
+  }
+
+  .glass,
+  .report-card,
+  .mini-analysis,
+  .score-grid div {
+    background: #fff !important;
+    box-shadow: none !important;
+    backdrop-filter: none !important;
+  }
+
+  .report-card {
+    border: 0;
+    border-radius: 0;
+    padding: 0;
+  }
+
+  .eyebrow {
+    color: var(--cyan);
+    font-size: 9pt;
+    letter-spacing: .16em;
+  }
+
+  .report-card h2 {
+    color: #101827;
+    font-size: 28pt;
+    line-height: 1;
+    letter-spacing: -.02em;
+    border-bottom: 2px solid #101827;
+    padding-bottom: 8mm;
+    margin: 2mm 0 7mm;
+  }
+
+  .score-grid {
+    grid-template-columns: repeat(4, 1fr);
+    gap: 5mm;
+    margin: 0 0 8mm;
+  }
+
+  .score-grid div {
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    padding: 5mm;
+  }
+
+  .score-grid b {
+    color: #101827;
+    font-size: 21pt;
+  }
+
+  .score-grid span,
+  .review-meta {
+    color: var(--muted);
+  }
+
+  .analysis-box {
+    color: var(--ink);
+  }
+
+  .analysis-box h3 {
+    color: #101827;
+    border-top: 1px solid var(--line);
+    padding-top: 5mm;
+    margin-top: 7mm;
+    break-after: avoid;
+  }
+
+  .mini-analysis {
+    border: 1px solid var(--line);
+    border-left: 5px solid #9aa4b8;
+    border-radius: 10px;
+    padding: 5mm;
+    margin: 5mm 0;
+    break-inside: avoid;
+    page-break-inside: avoid;
+  }
+
+  .mini-analysis.correct {
+    border-left-color: var(--green);
+  }
+
+  .mini-analysis.wrong {
+    border-left-color: var(--rose);
+  }
+
+  .mini-analysis h4 {
+    color: #101827;
+    font-size: 14pt;
+  }
+
+  .mini-analysis p {
+    margin: 2.5mm 0;
+  }
+
+  .pill-good {
+    color: var(--green);
+  }
+
+  .pill-bad {
+    color: var(--rose);
+  }
+}

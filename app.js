@@ -1,6 +1,6 @@
 const START_DATE = "2026-06-30";
 const CAT_DATE = "2026-11-29";
-const QUESTION_BANK_VERSION = "2026-06-30-real-bank-slots-v1";
+const QUESTION_BANK_VERSION = "2026-06-30-expanded-bank-v1";
 const DAILY_REQUIREMENTS = {
   varcPassages: 4,
   dilrSets: 5,
@@ -249,7 +249,7 @@ function makeQuestion({ id, bankSlot = "", section, setTitle, topic, difficulty,
 
 function makeQuant(seed, index) {
   const rand = rng(seed + index * 982451653);
-  const type = index % 10;
+  const type = index % 20;
   const id = `Q-${seed}-${index}`;
 
   if (type === 0) {
@@ -388,16 +388,162 @@ function makeQuant(seed, index) {
     });
   }
 
-  const threshold = pick(rand, [8, 9, 10, 11]);
-  const fav = Array.from({ length: 6 }, (_, a) => a + 1).flatMap((a) => Array.from({ length: 6 }, (_, b) => [a, b + 1])).filter(([a, b]) => a + b >= threshold).length;
-  const g = gcd(fav, 36);
-  const ans = `${fav / g}/${36 / g}`;
-  const opts = optionize(rand, ans, [`${fav}/36`, `${Math.max(1, fav - 2)}/36`, `${Math.min(35, fav + 2)}/36`]);
+  if (type === 9) {
+    const threshold = pick(rand, [8, 9, 10, 11]);
+    const fav = Array.from({ length: 6 }, (_, a) => a + 1).flatMap((a) => Array.from({ length: 6 }, (_, b) => [a, b + 1])).filter(([a, b]) => a + b >= threshold).length;
+    const g = gcd(fav, 36);
+    const ans = `${fav / g}/${36 / g}`;
+    const opts = optionize(rand, ans, [`${fav}/36`, `${Math.max(1, fav - 2)}/36`, `${Math.min(35, fav + 2)}/36`]);
+    return makeQuestion({
+      id, section: "Quant", setTitle: "Quantitative Aptitude", topic: "Probability", difficulty: "Moderate-Difficult",
+      question: `Two fair dice are rolled. What is the probability that the sum is at least ${threshold}?`,
+      ...opts,
+      solution: `Total outcomes \\(=36\\). Favourable outcomes with sum at least ${threshold} \\(=${fav}\\). Probability \\(=\\frac{${fav}}{36}=${ans}\\).`
+    });
+  }
+
+  if (type === 10) {
+    const a = pick(rand, [3, 4, 5, 7]);
+    const b = pick(rand, [5, 7, 8, 9]);
+    const k = pick(rand, [6, 8, 10, 12]);
+    const extra = pick(rand, [18, 24, 30, 36]);
+    const total = (a + b) * k + extra;
+    const x = (total - extra) / (a + b);
+    const ans = a * x;
+    const opts = optionize(rand, ans, [b * x, ans + extra / 2, Math.max(1, ans - extra / 3)]);
+    return makeQuestion({
+      id, section: "Quant", setTitle: "Quantitative Aptitude", topic: "Ratio and Proportion", difficulty: "Moderate-Difficult",
+      question: `Two quantities are in the ratio ${a}:${b}. If their sum is increased by ${extra}, the new total becomes ${total}. What was the smaller original quantity?`,
+      ...opts,
+      solution: `Original sum \\(=${total}-${extra}=${total - extra}\\). One ratio unit \\(=\\frac{${total - extra}}{${a + b}}=${x}\\). Smaller quantity \\(=${a}\\times ${x}=${ans}\\).`
+    });
+  }
+
+  if (type === 11) {
+    const n1 = pick(rand, [24, 30, 36, 40]);
+    const avg1 = pick(rand, [42, 46, 50, 54]);
+    const n2 = pick(rand, [16, 20, 24, 30]);
+    const avg2 = avg1 + pick(rand, [8, 10, 12, 15]);
+    const ans = Number(((n1 * avg1 + n2 * avg2) / (n1 + n2)).toFixed(2));
+    const opts = optionize(rand, ans, [Number(((avg1 + avg2) / 2).toFixed(2)), Number((ans + 2).toFixed(2)), Number((ans - 2).toFixed(2))]);
+    return makeQuestion({
+      id, section: "Quant", setTitle: "Quantitative Aptitude", topic: "Averages", difficulty: "Moderate-Difficult",
+      question: `A batch of ${n1} students has average score ${avg1}. Another batch of ${n2} students has average score ${avg2}. What is the combined average?`,
+      ...opts,
+      solution: `Combined average \\(=\\frac{${n1}\\times${avg1}+${n2}\\times${avg2}}{${n1}+${n2}}=${ans}\\). Weighted average is required, not simple average of averages.`
+    });
+  }
+
+  if (type === 12) {
+    const divisor = pick(rand, [7, 9, 11, 13]);
+    const remainder = pick(rand, [2, 3, 4, 5]);
+    const count = pick(rand, [21, 24, 27, 30]);
+    const n = divisor * count + remainder;
+    const ans = n % (divisor - 2);
+    const opts = optionize(rand, ans, [(n + remainder) % (divisor - 2), (n - remainder) % (divisor - 2), remainder]);
+    return makeQuestion({
+      id, section: "Quant", setTitle: "Quantitative Aptitude", topic: "Remainders", difficulty: "Difficult",
+      question: `A positive integer \\(N\\) leaves remainder ${remainder} when divided by ${divisor}, and \\(N\\) lies between ${divisor * (count - 1)} and ${divisor * (count + 1)}. What remainder does \\(N\\) leave when divided by ${divisor - 2}?`,
+      ...opts,
+      solution: `The only matching value in the interval is \\(N=${divisor}\\times${count}+${remainder}=${n}\\). Dividing ${n} by ${divisor - 2} leaves remainder ${ans}.`
+    });
+  }
+
+  if (type === 13) {
+    const first = pick(rand, [5, 7, 9, 11]);
+    const diff = pick(rand, [3, 4, 5, 6]);
+    const terms = pick(rand, [12, 15, 18, 20]);
+    const ans = terms * (2 * first + (terms - 1) * diff) / 2;
+    const opts = optionize(rand, ans, [ans + terms * diff, ans - terms * diff, first * terms]);
+    return makeQuestion({
+      id, section: "Quant", setTitle: "Quantitative Aptitude", topic: "Sequences and Series", difficulty: "Moderate",
+      question: `An arithmetic progression has first term ${first} and common difference ${diff}. What is the sum of its first ${terms} terms?`,
+      ...opts,
+      solution: `AP sum \\(S_n=\\frac{n}{2}[2a+(n-1)d]\\). So \\(S=${terms}/2[2(${first})+${terms - 1}(${diff})]=${ans}\\).`
+    });
+  }
+
+  if (type === 14) {
+    const consonants = pick(rand, [4, 5, 6]);
+    const vowels = pick(rand, [3, 4]);
+    const total = consonants + vowels;
+    const ans = factorial(consonants) * factorial(vowels) * 2;
+    const opts = optionize(rand, ans, [factorial(total), factorial(consonants) * factorial(vowels), ans * 2]);
+    return makeQuestion({
+      id, section: "Quant", setTitle: "Quantitative Aptitude", topic: "Permutations with Restrictions", difficulty: "Difficult",
+      question: `A word has ${consonants} distinct consonants and ${vowels} distinct vowels. In how many arrangements are all vowels together and all consonants together?`,
+      ...opts,
+      solution: `Treat vowels as one block and consonants as one block: the two blocks can be ordered in \\(2!\\) ways. Internal arrangements are \\(${vowels}!\\) and \\(${consonants}!\\). Total \\(=2\\times${vowels}!\\times${consonants}!=${ans}\\).`
+    });
+  }
+
+  if (type === 15) {
+    const x1 = pick(rand, [1, 2, 3, 4]);
+    const y1 = pick(rand, [2, 3, 5, 7]);
+    const dx = pick(rand, [3, 4, 5, 6]);
+    const dy = pick(rand, [4, 6, 8, 10]);
+    const ans = Number(Math.sqrt(dx * dx + dy * dy).toFixed(2));
+    const opts = optionize(rand, ans, [dx + dy, Number((ans + 1).toFixed(2)), Number((ans - 1).toFixed(2))]);
+    return makeQuestion({
+      id, section: "Quant", setTitle: "Quantitative Aptitude", topic: "Coordinate Geometry", difficulty: "Moderate",
+      question: `What is the distance between points \\((${x1},${y1})\\) and \\((${x1 + dx},${y1 + dy})\\)?`,
+      ...opts,
+      solution: `Distance \\(=\\sqrt{(${dx})^2+(${dy})^2}=\\sqrt{${dx * dx + dy * dy}}=${ans}\\).`
+    });
+  }
+
+  if (type === 16) {
+    const h = pick(rand, [2, 3, 4, 5]);
+    const k = pick(rand, [12, 16, 20, 25]);
+    const ans = k;
+    const opts = optionize(rand, ans, [k - h, k + h, h * k]);
+    return makeQuestion({
+      id, section: "Quant", setTitle: "Quantitative Aptitude", topic: "Functions and Graphs", difficulty: "Difficult",
+      question: `For real \\(x\\), what is the maximum value of \\(- (x-${h})^2 + ${k}\\)?`,
+      ...opts,
+      solution: `Since \\((x-${h})^2\\ge 0\\), the expression is maximum when \\(x=${h}\\). Maximum value \\(=${k}\\).`
+    });
+  }
+
+  if (type === 17) {
+    const fillA = pick(rand, [12, 15, 18, 20]);
+    const fillB = pick(rand, [18, 20, 24, 30]);
+    const leak = pick(rand, [36, 40, 45, 60]);
+    const rate = 1 / fillA + 1 / fillB - 1 / leak;
+    const ans = Number((1 / rate).toFixed(2));
+    const opts = optionize(rand, ans, [Number((fillA * fillB / (fillA + fillB)).toFixed(2)), Number((ans + 3).toFixed(2)), Number((ans - 3).toFixed(2))]);
+    return makeQuestion({
+      id, section: "Quant", setTitle: "Quantitative Aptitude", topic: "Pipes and Cisterns", difficulty: "Difficult",
+      question: `Pipe A fills a tank in ${fillA} hours, pipe B fills it in ${fillB} hours, and a leak empties it in ${leak} hours. If all are opened together, how long will the tank take to fill?`,
+      ...opts,
+      solution: `Net rate \\(=\\frac{1}{${fillA}}+\\frac{1}{${fillB}}-\\frac{1}{${leak}}=${rate.toFixed(4)}\\). Time \\(=\\frac{1}{\\text{net rate}}=${ans}\\) hours.`
+    });
+  }
+
+  if (type === 18) {
+    const radius = pick(rand, [3, 4, 5, 6, 7]);
+    const height = pick(rand, [8, 10, 12, 14]);
+    const ans = `${radius * radius * height}π`;
+    const opts = optionize(rand, ans, [`${2 * radius * height}π`, `${radius * height}π`, `${radius * radius * (height + 1)}π`]);
+    return makeQuestion({
+      id, section: "Quant", setTitle: "Quantitative Aptitude", topic: "Mensuration", difficulty: "Moderate",
+      question: `A cylinder has radius ${radius} cm and height ${height} cm. What is its volume?`,
+      ...opts,
+      solution: `Cylinder volume \\(=\\pi r^2h=\\pi\\times${radius}^2\\times${height}=${radius * radius * height}\\pi\\).`
+    });
+  }
+
+  const a = pick(rand, [45, 50, 55, 60]);
+  const b = pick(rand, [40, 45, 50, 55]);
+  const both = pick(rand, [18, 20, 22, 25]);
+  const total = a + b - both + pick(rand, [12, 15, 18, 24, 30]);
+  const neither = total - (a + b - both);
+  const opts = optionize(rand, neither, [neither + 4, Math.max(0, neither - 4), both]);
   return makeQuestion({
-    id, section: "Quant", setTitle: "Quantitative Aptitude", topic: "Probability", difficulty: "Moderate-Difficult",
-    question: `Two fair dice are rolled. What is the probability that the sum is at least ${threshold}?`,
+    id, section: "Quant", setTitle: "Quantitative Aptitude", topic: "Set Theory", difficulty: "Moderate-Difficult",
+    question: `In a group of ${total} students, ${a} like Algebra, ${b} like Geometry, and ${both} like both. How many like neither Algebra nor Geometry?`,
     ...opts,
-    solution: `Total outcomes \\(=36\\). Favourable outcomes with sum at least ${threshold} \\(=${fav}\\). Probability \\(=\\frac{${fav}}{36}=${ans}\\).`
+    solution: `Students liking at least one \\(=${a}+${b}-${both}=${a + b - both}\\). Neither \\(=${total}-${a + b - both}=${neither}\\).`
   });
 }
 
@@ -486,6 +632,326 @@ const varcThemes = [
     tension: "The wish to freeze language often disguises a wish to freeze the authority of those already fluent in its older forms.",
     concession: "Not every new phrase is precise, beautiful, or worth keeping.",
     conclusion: "A language survives because communities argue over use, not because a committee arrests it."
+  },
+  {
+    topic: "digital privacy",
+    anchor: "fitness trackers, payment trails, smart cameras, and location histories",
+    example: "A person may consent to share a step count without noticing that the same data can reveal routines, absences, illnesses, and anxieties.",
+    tension: "Privacy is weakened less by one dramatic exposure than by the gradual normalisation of being legible to institutions.",
+    concession: "Data can make services safer, faster, and more responsive when its use is narrow and accountable.",
+    conclusion: "The defence of privacy is therefore a defence of meaningful limits, not secrecy for its own sake."
+  },
+  {
+    topic: "public libraries",
+    anchor: "quiet reading rooms, digital catalogues, community classes, and borrowed devices",
+    example: "A library that lends internet access may be preserving the spirit of reading more faithfully than one that merely protects shelves.",
+    tension: "If libraries are judged only by book circulation, their civic function becomes invisible precisely when it is most needed.",
+    concession: "A library cannot become every public service at once without losing focus and competence.",
+    conclusion: "Its future depends on treating access to attention as seriously as access to information."
+  },
+  {
+    topic: "remote work",
+    anchor: "video calls, shared documents, home offices, and asynchronous updates",
+    example: "A worker freed from commuting can also become a worker whose day has no obvious edge.",
+    tension: "Flexibility becomes a burden when the institution keeps the freedom but transfers the coordination cost to the individual.",
+    concession: "For many people, remote work has made participation possible where office routines once excluded them.",
+    conclusion: "The humane test of remote work is whether autonomy is matched by explicit norms."
+  },
+  {
+    topic: "food authenticity",
+    anchor: "regional recipes, fusion restaurants, family kitchens, and tourism menus",
+    example: "A dish can be called authentic because it is old, because it is local, or because it satisfies an outsider's expectation of localness.",
+    tension: "Authenticity becomes suspect when it turns living practice into a performance for consumers.",
+    concession: "Borrowing and adaptation are not betrayals; cuisines have always travelled through trade, migration, and scarcity.",
+    conclusion: "Food traditions survive through negotiated continuity rather than purity."
+  },
+  {
+    topic: "sports analytics",
+    anchor: "player dashboards, win-probability models, scouting databases, and wearable sensors",
+    example: "A coach who trusts only the eye may miss patterns, while a coach who trusts only the model may miss courage, fatigue, or fear.",
+    tension: "Numbers are most dangerous not when they are wrong, but when they appear complete.",
+    concession: "Analytics has corrected many sentimental myths about talent and performance.",
+    conclusion: "The best sporting judgment lets measurement discipline intuition without replacing it."
+  },
+  {
+    topic: "artificial intelligence in education",
+    anchor: "essay assistants, tutoring bots, plagiarism detectors, and adaptive quizzes",
+    example: "A student can receive instant feedback and still never learn how to sit with confusion long enough to form a question.",
+    tension: "Automation can improve instruction while hollowing out the apprenticeship through which judgment is learned.",
+    concession: "Denying students access to powerful tools rarely teaches integrity; it often teaches evasion.",
+    conclusion: "Education must redesign tasks around thinking, not merely police the tools used to complete them."
+  },
+  {
+    topic: "memory and photography",
+    anchor: "phone galleries, cloud backups, staged portraits, and disappearing stories",
+    example: "People now document experiences partly to remember them and partly to prove that they were worth remembering.",
+    tension: "The camera can preserve a moment while also teaching the subject to experience the moment as future evidence.",
+    concession: "Photographs have always shaped memory; there was no innocent era of pure recollection.",
+    conclusion: "The question is whether documentation deepens attention or merely replaces it."
+  },
+  {
+    topic: "market efficiency",
+    anchor: "dynamic pricing, ratings platforms, delivery apps, and algorithmic matching",
+    example: "A marketplace can reduce search costs while making every participant constantly measurable and replaceable.",
+    tension: "Efficiency becomes impoverished when it counts only completed transactions and not the forms of dependence they create.",
+    concession: "Slow, opaque markets often protected insiders and punished newcomers.",
+    conclusion: "A fair market must be judged by the bargaining power it leaves behind, not just the speed it produces."
+  },
+  {
+    topic: "archaeological interpretation",
+    anchor: "fragments of pottery, burial sites, inscriptions, and reconstructed settlements",
+    example: "A broken vessel may tell us less about what happened than about what modern scholars are trained to consider evidence.",
+    tension: "The past is vulnerable to being made coherent by the needs of the present.",
+    concession: "Interpretation is not optional; mute objects do not organise themselves into history.",
+    conclusion: "Good archaeology is disciplined imagination constrained by material resistance."
+  },
+  {
+    topic: "climate adaptation",
+    anchor: "sea walls, heat shelters, crop shifts, and managed retreat",
+    example: "A city that builds higher barriers may be adapting to risk while postponing a conversation about where people should live.",
+    tension: "Adaptation can become a comforting word for accepting unequal exposure to danger.",
+    concession: "Refusing adaptation because mitigation is morally urgent would leave vulnerable people unprotected.",
+    conclusion: "The ethical challenge is to adapt without making injustice look like resilience."
+  },
+  {
+    topic: "translation",
+    anchor: "subtitles, bilingual editions, machine translation, and literary prizes",
+    example: "A translated poem may fail by being too literal or by being so fluent that it erases the pressure of another language.",
+    tension: "Translation is judged unfairly when fidelity is imagined as the absence of interpretation.",
+    concession: "A translator cannot preserve every rhythm, joke, ambiguity, and cultural echo at once.",
+    conclusion: "A good translation is not a window without glass but a carefully made lens."
+  },
+  {
+    topic: "consumer minimalism",
+    anchor: "decluttered homes, capsule wardrobes, productivity blogs, and lifestyle branding",
+    example: "Owning fewer things can free attention, but it can also become another way of purchasing a cleaner identity.",
+    tension: "Minimalism becomes contradictory when it turns restraint into a status object.",
+    concession: "There is real relief in refusing needless accumulation and the debt that often sustains it.",
+    conclusion: "The value of simplicity depends on whether it reduces performance or merely changes its costume."
+  },
+  {
+    topic: "medical diagnosis",
+    anchor: "scan results, symptom checkers, clinical interviews, and risk scores",
+    example: "A clear scan can reassure a patient while failing to explain the pain that brought the patient to the clinic.",
+    tension: "Medicine loses something when evidence that is easy to record displaces evidence that is difficult to hear.",
+    concession: "Romanticising bedside intuition would be dangerous; tests have corrected countless confident errors.",
+    conclusion: "Good diagnosis joins measurement with attention to the story in which symptoms occur."
+  },
+  {
+    topic: "financial literacy",
+    anchor: "budgeting apps, credit scores, investment reels, and classroom modules",
+    example: "Teaching a person compound interest is useful, but it does not by itself create wages, security, or bargaining power.",
+    tension: "Financial literacy can become a way of individualising problems that are partly structural.",
+    concession: "Knowledge still matters; ignorance makes exploitation easier and recovery harder.",
+    conclusion: "The strongest financial education links personal skill with institutional awareness."
+  },
+  {
+    topic: "scientific peer review",
+    anchor: "anonymous reports, journal rankings, replication checks, and preprint servers",
+    example: "A paper can be rejected because it is weak, because it is unfamiliar, or because reviewers mistake convention for rigour.",
+    tension: "Peer review protects knowledge by slowing it down, but the same slowness can protect hierarchy.",
+    concession: "Removing review altogether would not create openness; it would shift trust to noisier signals.",
+    conclusion: "The challenge is to make scrutiny more transparent without making it performative."
+  },
+  {
+    topic: "tourism and place",
+    anchor: "heritage districts, photo spots, guided walks, and short-term rentals",
+    example: "A neighbourhood can become famous for the very texture that tourism then prices out of daily life.",
+    tension: "Tourism often preserves the image of a place while weakening the conditions that produced it.",
+    concession: "Visitors can bring income, attention, and political support for conservation.",
+    conclusion: "A place is not protected if only its visitor-facing surface survives."
+  },
+  {
+    topic: "attention economy",
+    anchor: "notifications, infinite scroll, creator metrics, and personalised feeds",
+    example: "A platform can claim to offer choice while designing the environment in which choosing becomes exhausting.",
+    tension: "Attention is captured most effectively when capture feels like self-expression.",
+    concession: "People are not passive victims; they use platforms for learning, friendship, and livelihood.",
+    conclusion: "The politics of attention begins with asking who profits from interrupted thought."
+  },
+  {
+    topic: "legal precedent",
+    anchor: "court judgments, dissenting opinions, statutory interpretation, and constitutional disputes",
+    example: "A precedent can stabilise law while carrying forward the assumptions of a less democratic moment.",
+    tension: "Respect for continuity becomes troubling when continuity shields an error from fresh reasoning.",
+    concession: "A legal system that revises every question from scratch would become arbitrary and slow.",
+    conclusion: "The authority of precedent depends on the quality of the reasons it keeps alive."
+  },
+  {
+    topic: "childhood play",
+    anchor: "scheduled activities, playground design, screen games, and parental monitoring",
+    example: "A child may be safer in a supervised activity and yet have fewer chances to negotiate risk independently.",
+    tension: "Protection becomes excessive when it removes the small uncertainties through which agency develops.",
+    concession: "Appeals to freedom can ignore real dangers and unequal neighbourhood conditions.",
+    conclusion: "Good play environments stage risk without abandoning care."
+  },
+  {
+    topic: "open-source software",
+    anchor: "public repositories, volunteer maintainers, issue trackers, and corporate dependencies",
+    example: "A company may celebrate openness while relying on unpaid maintenance it would never leave unfunded internally.",
+    tension: "The gift economy of code becomes strained when gratitude substitutes for responsibility.",
+    concession: "Open collaboration has produced tools no single firm would have imagined or sustained.",
+    conclusion: "The future of open source depends on matching shared benefit with shared upkeep."
+  },
+  {
+    topic: "cultural awards",
+    anchor: "literary prizes, film festivals, jury citations, and bestseller lists",
+    example: "An award can reveal neglected work and also teach audiences which forms of seriousness are fashionable.",
+    tension: "Recognition changes the field it claims merely to observe.",
+    concession: "Without institutions of attention, many difficult works would disappear quietly.",
+    conclusion: "Awards are useful when treated as arguments, not verdicts."
+  },
+  {
+    topic: "rural development",
+    anchor: "roads, mobile banking, irrigation schemes, and migration corridors",
+    example: "A new road may connect a village to markets while also accelerating the departure of its young workers.",
+    tension: "Development indicators can rise while the social meaning of staying becomes harder to defend.",
+    concession: "Romanticising rural life can excuse deprivation and limited opportunity.",
+    conclusion: "Development should expand choices without quietly declaring one way of life obsolete."
+  },
+  {
+    topic: "news credibility",
+    anchor: "fact-checks, viral clips, anonymous sources, and subscription newsletters",
+    example: "A corrected falsehood may travel less widely than the emotion that made it believable.",
+    tension: "Credibility cannot be repaired only at the level of facts when mistrust is social and emotional.",
+    concession: "Facts still matter; cynicism about all reporting simply rewards the loudest manipulator.",
+    conclusion: "Trustworthy news must make its methods visible as well as its conclusions."
+  },
+  {
+    topic: "craft and automation",
+    anchor: "handmade goods, CNC machines, design software, and maker workshops",
+    example: "A chair cut by a machine may still embody craft if the maker understands the material, use, and constraint.",
+    tension: "Craft is cheapened when it is reduced either to hand labour or to luxury branding.",
+    concession: "Automation can remove drudgery and make precision available to more people.",
+    conclusion: "Craft is best understood as accountable judgment in making."
+  },
+  {
+    topic: "university rankings",
+    anchor: "citation counts, employer surveys, international faculty ratios, and placement data",
+    example: "A department may improve its rank by becoming more legible to ranking systems rather than more useful to students.",
+    tension: "Rankings govern behaviour because they turn complex missions into competitive simplicity.",
+    concession: "Some comparison is necessary; opacity can shelter mediocrity and exclusion.",
+    conclusion: "The danger lies in mistaking a proxy for the institution's purpose."
+  },
+  {
+    topic: "migration narratives",
+    anchor: "remittances, border policies, language classes, and diasporic festivals",
+    example: "A migrant can be praised as resilient while the conditions requiring resilience remain unquestioned.",
+    tension: "Stories of success may console the receiving society by turning structural hardship into personal virtue.",
+    concession: "Agency is real; migrants are not merely victims of policy or economy.",
+    conclusion: "A truthful migration narrative must hold ambition and constraint together."
+  },
+  {
+    topic: "environmental accounting",
+    anchor: "carbon offsets, ESG reports, biodiversity credits, and supply-chain audits",
+    example: "A company can count trees planted more easily than communities displaced or water tables altered.",
+    tension: "Accounting can make responsibility visible, but it can also make only the countable seem responsible.",
+    concession: "Without measurement, environmental promises often dissolve into public relations.",
+    conclusion: "The best accounting systems reveal uncertainty instead of hiding it behind precision."
+  },
+  {
+    topic: "discipline in learning",
+    anchor: "timetables, streak counters, mock tests, and revision notebooks",
+    example: "A student may protect a study streak even when the streak has stopped protecting understanding.",
+    tension: "Discipline becomes hollow when consistency is preserved after purpose has vanished.",
+    concession: "Waiting for motivation is a poor strategy; habits carry effort across ordinary resistance.",
+    conclusion: "A useful discipline remains answerable to learning rather than appearance."
+  },
+  {
+    topic: "public transport design",
+    anchor: "metro maps, feeder buses, fare cards, and last-mile services",
+    example: "A city may build a fast line that remains socially slow for anyone who cannot reach the station safely.",
+    tension: "Transport equity is often lost in the gap between network efficiency and door-to-door experience.",
+    concession: "Large systems require abstraction; planners cannot design every trip as a special case.",
+    conclusion: "Good transport planning measures the journey people actually make."
+  },
+  {
+    topic: "digital archives",
+    anchor: "scanned manuscripts, metadata tags, search boxes, and preservation servers",
+    example: "A searchable archive can rescue forgotten material while making what is untagged newly invisible.",
+    tension: "Digitisation changes access by changing the questions users are likely to ask.",
+    concession: "Physical archives were never neutral; distance, permission, and fragility shaped scholarship long before search engines.",
+    conclusion: "An archive's openness depends on the design of discovery as much as on the volume of material."
+  },
+  {
+    topic: "philanthropy",
+    anchor: "foundation grants, impact metrics, naming rights, and charitable campaigns",
+    example: "A donor may solve a visible problem while gaining influence over which problems become visible.",
+    tension: "Generosity becomes politically complicated when private preference sets public priority.",
+    concession: "Many institutions and communities survive because philanthropic money arrives where public systems fail.",
+    conclusion: "The ethics of giving includes accountability for the power that giving creates."
+  },
+  {
+    topic: "professional expertise",
+    anchor: "consultants, certification exams, expert panels, and public advice",
+    example: "An expert can simplify responsibly for a lay audience or simplify so much that uncertainty disappears.",
+    tension: "Expertise loses legitimacy when it demands trust while concealing its limits.",
+    concession: "Anti-expert suspicion often mistakes confidence for arrogance and complexity for deception.",
+    conclusion: "A healthy public culture needs experts who can explain both knowledge and doubt."
+  },
+  {
+    topic: "workplace diversity",
+    anchor: "hiring targets, mentorship programmes, inclusion surveys, and promotion panels",
+    example: "An organisation can diversify entry-level hiring while leaving the grammar of leadership unchanged.",
+    tension: "Representation becomes thin when difference is welcomed only after it has been trained not to disturb norms.",
+    concession: "Numbers are not meaningless; without them, institutions often narrate progress they have not made.",
+    conclusion: "Inclusion is tested by who gets to reshape the standard of merit."
+  },
+  {
+    topic: "risk communication",
+    anchor: "weather warnings, health advisories, probability charts, and emergency alerts",
+    example: "A forecast that is statistically accurate can still fail if people do not understand what action it demands.",
+    tension: "Risk is not communicated merely by stating likelihood; it must be translated into practical consequence.",
+    concession: "Over-simplifying danger can produce panic or complacency.",
+    conclusion: "Good warnings respect both evidence and the conditions under which people decide."
+  },
+  {
+    topic: "literary canon",
+    anchor: "school syllabi, anthologies, footnotes, and examination passages",
+    example: "A text enters the canon not only because it is read, but because institutions keep arranging occasions to reread it.",
+    tension: "The canon becomes oppressive when durability is mistaken for universal value.",
+    concession: "Discarding inherited works wholesale can flatten the very arguments through which culture understands itself.",
+    conclusion: "A living canon is revised through serious encounter, not simple replacement."
+  },
+  {
+    topic: "startup culture",
+    anchor: "pitch decks, growth charts, founder stories, and burn-rate dashboards",
+    example: "A firm can call every constraint temporary while building a culture that treats exhaustion as evidence of belief.",
+    tension: "Optimism becomes managerial when it asks workers to absorb uncertainty as passion.",
+    concession: "New ventures require risk; excessive caution would prevent many useful experiments.",
+    conclusion: "Entrepreneurial energy is healthiest when ambition is separated from denial."
+  },
+  {
+    topic: "citizen science",
+    anchor: "bird counts, pollution sensors, open maps, and community labs",
+    example: "A resident's measurement may be dismissed as amateur until it reveals what official instruments never looked for.",
+    tension: "Participation is weakened when citizens collect data but professionals retain all interpretive authority.",
+    concession: "Quality control matters; not every local observation is automatically reliable.",
+    conclusion: "Citizen science works best when it shares both observation and question-making."
+  },
+  {
+    topic: "time management",
+    anchor: "calendar blocks, priority matrices, habit apps, and deep-work rituals",
+    example: "A perfectly organised day can still protect the wrong work from interruption.",
+    tension: "Time management fails when it treats attention as a scheduling problem but not a value problem.",
+    concession: "Unstructured aspiration often collapses under ordinary demands.",
+    conclusion: "The point of planning is not to fill time but to defend judgment about what deserves it."
+  },
+  {
+    topic: "heritage conservation",
+    anchor: "restored facades, adaptive reuse, plaques, and preservation laws",
+    example: "A building can be saved as a facade while the life that made it historically meaningful is displaced.",
+    tension: "Conservation becomes theatrical when it preserves appearance without social context.",
+    concession: "Material traces matter; memory needs anchors that survive private convenience.",
+    conclusion: "Heritage is most honest when it protects use, conflict, and continuity together."
+  },
+  {
+    topic: "online education",
+    anchor: "recorded lectures, discussion boards, auto-graded quizzes, and completion certificates",
+    example: "A course can reach thousands while leaving each learner alone with the hardest part of learning.",
+    tension: "Scale can distribute content faster than it can distribute mentorship.",
+    concession: "For learners excluded by cost, geography, or time, online education can be transformative.",
+    conclusion: "The measure of online learning is not access to videos but access to correction."
   }
 ];
 
@@ -583,9 +1049,84 @@ function minBy(rows, fn) {
   return rows.reduce((best, row) => fn(row) < fn(best) ? row : best, rows[0]);
 }
 
+const dilrGenericSchemas = [
+  ["Retail Footfall", "store", ["Atria", "Beryl", "Crown", "Dune", "Elan", "Forum"], "weekday visitors", "weekend visitors", "conversion %", "bill value"],
+  ["Clinic Queue", "clinic", ["North", "South", "East", "West", "Central", "Metro"], "appointments", "walk-ins", "completion %", "fee"],
+  ["Warehouse Dispatch", "warehouse", ["Alpha", "Beta", "Gamma", "Delta", "Sigma", "Omega"], "orders", "returns", "dispatch %", "unit margin"],
+  ["Mock Test Centres", "centre", ["Delhi", "Pune", "Surat", "Ranchi", "Kochi", "Jaipur"], "registered", "absent", "accuracy %", "score weight"],
+  ["Subscription Cohorts", "cohort", ["Jan", "Feb", "Mar", "Apr", "May", "Jun"], "new users", "churned", "active %", "monthly fee"],
+  ["Factory Lines", "line", ["L1", "L2", "L3", "L4", "L5", "L6"], "planned units", "defects", "yield %", "profit/unit"],
+  ["Library Programmes", "programme", ["Archives", "Coding", "Debate", "Design", "Finance", "Writing"], "registrations", "dropouts", "attendance %", "grant/unit"],
+  ["Food Delivery Zones", "zone", ["Zone A", "Zone B", "Zone C", "Zone D", "Zone E", "Zone F"], "orders", "cancelled", "on-time %", "avg bill"],
+  ["Scholarship Workshops", "workshop", ["Algebra", "Geometry", "VARC", "DILR", "Mocks", "GDPI"], "invited", "no-shows", "selection %", "award value"],
+  ["Hotel Occupancy", "hotel", ["Iris", "Lotus", "Maple", "Orchid", "Pearl", "Willow"], "rooms", "vacant", "occupancy %", "tariff"],
+  ["App Campaigns", "campaign", ["Search", "Social", "Email", "Referral", "Video", "Campus"], "leads", "invalid", "conversion %", "revenue/user"],
+  ["Training Projects", "project", ["Apex", "Blaze", "Core", "Drift", "Edge", "Flux"], "tasks", "reopened", "closure %", "credit/task"],
+  ["Exam Slots", "slot", ["Slot 1", "Slot 2", "Slot 3", "Slot 4", "Slot 5", "Slot 6"], "booked", "absent", "valid %", "fee"],
+  ["Courier Routes", "route", ["R1", "R2", "R3", "R4", "R5", "R6"], "parcels", "failed", "same-day %", "charge"],
+  ["Content Channels", "channel", ["Blog", "Shorts", "Podcast", "Webinar", "Newsletter", "Forum"], "views", "skips", "retention %", "value/view"],
+  ["Hiring Pipelines", "pipeline", ["Analyst", "Sales", "Ops", "Product", "Tech", "Support"], "applications", "rejected", "interview %", "cost/hire"],
+  ["Farm Produce", "market", ["Mandi A", "Mandi B", "Mandi C", "Mandi D", "Mandi E", "Mandi F"], "arrivals", "spoilage", "sold %", "price/unit"],
+  ["Museum Visits", "gallery", ["Coins", "Textiles", "Maps", "Sculpture", "Scripts", "Paintings"], "visitors", "passes", "guided %", "ticket"],
+  ["Energy Blocks", "block", ["B1", "B2", "B3", "B4", "B5", "B6"], "generated", "lost", "usable %", "rate"],
+  ["Practice Groups", "group", ["G1", "G2", "G3", "G4", "G5", "G6"], "assigned", "skipped", "correct %", "marks/question"]
+];
+
+function makeDilrGenericSet(seed, setIndex, schema) {
+  const rand = rng(seed ^ 0x71bd91f ^ setIndex);
+  const [topic, label, names, rawName, lossName, rateName, valueName] = schema;
+  const chosen = shuffle(rand, names).slice(0, 5);
+  const rows = chosen.map((name, i) => {
+    const raw = 110 + i * 23 + Math.floor(rand() * 45);
+    const loss = pick(rand, [8, 11, 14, 17, 20, 23]);
+    const rate = pick(rand, [54, 58, 62, 66, 70, 74, 78, 82]);
+    const value = pick(rand, [90, 110, 125, 150, 180, 210, 240]) + i * 5;
+    return { name, raw, loss, rate, value };
+  });
+  const eligible = (r) => r.raw - r.loss;
+  const effective = (r) => Math.round(eligible(r) * r.rate / 100);
+  const yieldValue = (r) => effective(r) * r.value;
+  const efficiency = (r) => yieldValue(r) / r.raw;
+  const headers = [label[0].toUpperCase() + label.slice(1), rawName, lossName, rateName, valueName];
+  const table = tableHtml(headers, rows.map((r) => [r.name, r.raw, r.loss, `${r.rate}%`, money(r.value)]));
+  const passage = `<p>The table gives data for five ${label}s. First remove ${lossName} from ${rawName}; then apply ${rateName} to the remaining count. Value is earned only on the effective count after this adjustment.</p>${table}`;
+  const pool = rows.map((r) => r.name);
+  const maxEffective = maxBy(rows, effective);
+  const maxValue = maxBy(rows, yieldValue);
+  const minEfficiency = minBy(rows, efficiency);
+  const totalEffective = rows.reduce((s, r) => s + effective(r), 0);
+  const totalOpts = optionize(rand, `${totalEffective}`, [`${totalEffective + 9}`, `${Math.max(1, totalEffective - 8)}`, `${totalEffective + 17}`]);
+  return [
+    makeQuestion({
+      id: `D-${seed}-${setIndex}-G1`, section: "DILR", setTitle: "Data Interpretation and Logical Reasoning", topic, difficulty: "Moderate-Difficult",
+      passageHtml: passage, question: `Which ${label} has the highest effective count after the adjustment?`, ...choiceSet(rand, maxEffective.name, pool),
+      solution: `Effective count = (${rawName} - ${lossName}) × ${rateName}. ${maxEffective.name} is highest with ${effective(maxEffective)}.`
+    }),
+    makeQuestion({
+      id: `D-${seed}-${setIndex}-G2`, section: "DILR", setTitle: "Data Interpretation and Logical Reasoning", topic, difficulty: "Difficult",
+      passageHtml: passage, question: "What is the total effective count across all five rows?", ...totalOpts,
+      solution: `Compute effective count row-wise after subtracting ${lossName}, then add all five values. Total effective count = ${totalEffective}.`
+    }),
+    makeQuestion({
+      id: `D-${seed}-${setIndex}-G3`, section: "DILR", setTitle: "Data Interpretation and Logical Reasoning", topic, difficulty: "Difficult",
+      passageHtml: passage, question: `Which ${label} generates the highest adjusted value?`, ...choiceSet(rand, maxValue.name, pool),
+      solution: `Adjusted value = effective count × ${valueName}. ${maxValue.name} is highest: ${effective(maxValue)} × ${money(maxValue.value)} = ${money(yieldValue(maxValue))}.`
+    }),
+    makeQuestion({
+      id: `D-${seed}-${setIndex}-G4`, section: "DILR", setTitle: "Data Interpretation and Logical Reasoning", topic, difficulty: "Difficult",
+      passageHtml: passage, question: `Which ${label} has the lowest adjusted value per original ${rawName}?`, ...choiceSet(rand, minEfficiency.name, pool),
+      solution: `Adjusted value per original ${rawName} = adjusted value/${rawName}. ${minEfficiency.name} is lowest at approximately ${money(efficiency(minEfficiency))}.`
+    })
+  ];
+}
+
 function makeDilrSet(seed, setIndex = 0) {
   const variants = [makeDilrRevenueSet, makeDilrTransitSet, makeDilrProjectSet, makeDilrBatchSet, makeDilrScholarshipSet];
-  return variants[((setIndex % variants.length) + variants.length) % variants.length](seed, setIndex)
+  const familyIndex = ((setIndex % (variants.length + dilrGenericSchemas.length)) + variants.length + dilrGenericSchemas.length) % (variants.length + dilrGenericSchemas.length);
+  const questions = familyIndex < variants.length
+    ? variants[familyIndex](seed, setIndex)
+    : makeDilrGenericSet(seed, setIndex, dilrGenericSchemas[familyIndex - variants.length]);
+  return questions
     .map((q, i) => ({ ...q, bankSlot: `DILR-${String(setIndex + 1).padStart(4, "0")}-Q${i + 1}` }));
 }
 
@@ -1085,6 +1626,16 @@ function formulaFor(q) {
     "Combinatorics": "Selection uses \\({}^nC_r\\); arrangement uses \\({}^nP_r\\).",
     "Quadratics": "For roots with sum \\(S\\) and difference \\(D\\), roots are \\(\\frac{S-D}{2}\\) and \\(\\frac{S+D}{2}\\).",
     "Probability": "Probability \\(=\\frac{\\text{favourable outcomes}}{\\text{total outcomes}}\\).",
+    "Ratio and Proportion": "If quantities are in ratio \\(a:b\\), write them as \\(ax\\) and \\(bx\\), then solve from the total.",
+    "Averages": "Combined average \\(=\\frac{n_1a_1+n_2a_2}{n_1+n_2}\\).",
+    "Remainders": "Convert the condition into \\(N=dq+r\\), identify \\(N\\), then divide by the required divisor.",
+    "Sequences and Series": "AP sum: \\(S_n=\\frac{n}{2}[2a+(n-1)d]\\).",
+    "Permutations with Restrictions": "Treat restricted groups as blocks first, then arrange within each block.",
+    "Coordinate Geometry": "Distance formula: \\(\\sqrt{(x_2-x_1)^2+(y_2-y_1)^2}\\).",
+    "Functions and Graphs": "For \\(- (x-h)^2+k\\), maximum occurs at \\(x=h\\), value \\(k\\).",
+    "Pipes and Cisterns": "Net rate \\(=\\) sum of filling rates minus leaking/emptying rates.",
+    "Mensuration": "Cylinder volume \\(=\\pi r^2h\\).",
+    "Set Theory": "\\(n(A\\cup B)=n(A)+n(B)-n(A\\cap B)\\); neither = total - union.",
     "Revenue Table": "Net revenue \\(=\\text{units}\\times\\text{list price}\\times(1-\\text{discount}/100)\\). Contribution subtracts per-unit cost before multiplying by units.",
     "Transit Operations": "Travel time \\(=\\frac{\\text{distance}}{\\text{speed}}\\times60+\\text{stop time}\\). Revenue \\(=\\text{passengers}\\times\\text{fare}\\).",
     "Project Productivity": "Completed work \\(=\\text{assigned}\\times\\text{completion rate}\\). Productivity \\(=\\frac{\\text{completed work}}{\\text{analysts}\\times\\text{hours}}\\).",
@@ -1092,6 +1643,8 @@ function formulaFor(q) {
     "Selection Funnel": "For sequential stages, multiply the starting count by each stage-clear percentage in order."
   };
   if (q.section === "VARC") return "RC method: identify conclusion, tone, and scope; reject options that are extreme, outside scope, or reverse the author's claim.";
+  if (map[q.topic]) return map[q.topic];
+  if (q.section === "DILR") return "Create derived columns in order: adjusted count, effective count, adjusted value, and value per original unit. Rank only after computing the required metric.";
   return map[q.topic] || "Use the conditions exactly as written; convert the wording into a small table/equation before choosing an option.";
 }
 

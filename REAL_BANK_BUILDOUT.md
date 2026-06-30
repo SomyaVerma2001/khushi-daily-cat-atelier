@@ -20,7 +20,13 @@ Current state:
 - The app now assigns permanent bank slots: `VARC-0001-Q1`, `DILR-0001-Q1`, `QUANT-0001`, etc.
 - The scheduler maps each IST day to unique bank slots.
 - `tools/audit_real_bank.js` verifies slot uniqueness, option counts, answer indexes, broken generated text, and VARC passage length.
-- The existing content is still a generator-backed placeholder bank. It is not a complete real authored bank yet.
+- Current expanded bank version: `2026-06-30-expanded-bank-v1`.
+- Structural variety currently audited:
+  - 48 VARC themes
+  - 25 DILR set families
+  - 20 Quant topics/templates
+- The Google Sheet shared on 2026-07-01 is accessible as a public resource directory, but the provided `gid=480061171` exports only the landing/instructions tab, not direct Q&A rows.
+- The current app bank is original deterministic generated material with checked answers. It is wider and no-repeat at slot level, but not yet a fully hand-authored 10,098-item textbook bank.
 
 Buildout rule:
 

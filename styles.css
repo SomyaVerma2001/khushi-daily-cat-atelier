@@ -137,6 +137,14 @@ code { color: var(--cyan); }
 }
 .question-text { font: 650 clamp(24px, 2.7vw, 38px)/1.16 Georgia, serif; margin-bottom: 18px; }
 .visual-panel svg { width: 100%; max-height: 360px; }
+.question-panel mjx-container,
+.review-item mjx-container,
+.mini-analysis mjx-container {
+  max-width: 100%;
+  overflow-x: auto;
+  overflow-y: hidden;
+}
+.option mjx-container { margin: 0 !important; }
 .options { display: grid; gap: 12px; }
 .option {
   width: 100%;

@@ -136,6 +136,60 @@ function writeJson(key, value) {
   localStorage.setItem(key, JSON.stringify(value));
 }
 
+function normalizeMath(value) {
+  let text = String(value ?? "")
+    .replace(/\\\\(?=frac\b)/g, "\\")
+    .replace(/\\\\\)/g, "\\)");
+  let cursor = 0;
+  while ((cursor = text.indexOf("\\frac", cursor)) !== -1) {
+    const lastOpen = text.lastIndexOf("\\(", cursor);
+    const lastClose = text.lastIndexOf("\\)", cursor);
+    if (lastOpen > lastClose) {
+      cursor += 5;
+      continue;
+    }
+    let end = cursor + 5;
+    for (let group = 0; group < 2; group++) {
+      while (/\s/.test(text[end] || "")) end++;
+      if (text[end] !== "{") {
+        end = -1;
+        break;
+      }
+      let depth = 0;
+      do {
+        if (text[end] === "{") depth++;
+        else if (text[end] === "}") depth--;
+        end++;
+      } while (end < text.length && depth > 0);
+      if (depth !== 0) {
+        end = -1;
+        break;
+      }
+    }
+    if (end < 0) {
+      cursor += 5;
+      continue;
+    }
+    let consume = end;
+    while (/\s/.test(text[consume] || "")) consume++;
+    if (text.slice(consume, consume + 2) === "\\)") consume += 2;
+    else if (text[consume] === ")") consume++;
+    text = text.slice(0, cursor) + "\\(" + text.slice(cursor, end) + "\\)" + text.slice(consume);
+    cursor = end + 4;
+  }
+  return text;
+}
+
+function typesetMath(nodes) {
+  if (window.MathJax?.typesetPromise) {
+    window.MathJax.typesetPromise(nodes).catch(() => {});
+  } else {
+    setTimeout(() => {
+      if (window.MathJax?.typesetPromise) window.MathJax.typesetPromise(nodes).catch(() => {});
+    }, 250);
+  }
+}
+
 function show(id) {
   document.querySelectorAll(".screen").forEach((s) => s.classList.remove("active"));
   $(id).classList.add("active");
@@ -163,7 +217,7 @@ function makeQuant(seed, index) {
       id, section: "Quant", setTitle: "Quantitative Aptitude", topic: "Profit, Loss and Discount", difficulty: "Moderate-Difficult",
       question: `An article costing Rs. ${cp} is marked ${markup}% above cost price. Two successive discounts of ${d1}% and ${d2}% are given. What is the profit percentage?`,
       ...opts,
-      solution: `Let cost be 100. Marked price = ${100 + markup}. Selling price = ${100 + markup} x ${(100 - d1) / 100} x ${(100 - d2) / 100} = ${Number((sp * 100 / cp).toFixed(2))}. Profit percentage = ${ans}.`
+      solution: `Let cost be \\(100\\). Marked price \\(= ${100 + markup}\\). Selling price \\(= ${100 + markup}\\times ${(100 - d1) / 100}\\times ${(100 - d2) / 100} = ${Number((sp * 100 / cp).toFixed(2))}\\). Profit percentage = ${ans}.`
     });
   }
 
@@ -173,9 +227,9 @@ function makeQuant(seed, index) {
     const opts = optionize(rand, ans, [ans + 6, ans - 6, s ** 3 - 2 * s, s ** 3 + 3 * s]);
     return makeQuestion({
       id, section: "Quant", setTitle: "Quantitative Aptitude", topic: "Algebra", difficulty: "Difficult",
-      question: `If x + 1/x = ${s}, where x > 0, find x^3 + 1/x^3.`,
+      question: `If \\(x+\\frac{1}{x}=${s}\\), where \\(x>0\\), find \\(x^3+\\frac{1}{x^3}\\).`,
       ...opts,
-      solution: `Use a^3+b^3 = (a+b)^3 - 3ab(a+b). Here a=x, b=1/x and ab=1. So x^3 + 1/x^3 = ${s}^3 - 3(${s}) = ${ans}.`
+      solution: `Use \\(a^3+b^3=(a+b)^3-3ab(a+b)\\). Here \\(a=x\\), \\(b=\\frac{1}{x}\\), and \\(ab=1\\). So \\(x^3+\\frac{1}{x^3}=${s}^3-3(${s})=${ans}\\).`
     });
   }
 
@@ -194,7 +248,7 @@ function makeQuant(seed, index) {
       id, section: "Quant", setTitle: "Quantitative Aptitude", topic: "Time and Work", difficulty: "Moderate-Difficult",
       question: `A, B and C can finish a work in ${a}, ${b} and ${c} days respectively. They work together for ${firstDays} days. Then A leaves, and B and C work for ${secondDays} more days. C completes the remaining work alone. How many total days are required?`,
       ...opts,
-      solution: `Work done = ${firstDays}(1/${a}+1/${b}+1/${c}) + ${secondDays}(1/${b}+1/${c}) = ${done.toFixed(4)}. Remaining = ${rem.toFixed(4)}. C takes remaining/(1/${c}) = ${extra.toFixed(2)} days. Total = ${ans}.`
+      solution: `Work done \\(= ${firstDays}(\\frac{1}{${a}}+\\frac{1}{${b}}+\\frac{1}{${c}})+${secondDays}(\\frac{1}{${b}}+\\frac{1}{${c}})=${done.toFixed(4)}\\). Remaining \\(=${rem.toFixed(4)}\\). C takes \\(\\frac{\\text{remaining}}{1/${c}}=${extra.toFixed(2)}\\) days. Total \\(=${ans}\\).`
     });
   }
 
@@ -209,7 +263,7 @@ function makeQuant(seed, index) {
       id, section: "Quant", setTitle: "Quantitative Aptitude", topic: "Speed Time Distance", difficulty: "Moderate-Difficult",
       question: `A person travels ${d} km at ${s1} km/h and returns the same distance at ${s2} km/h. What is the average speed for the whole journey?`,
       ...opts,
-      solution: `For equal distances, average speed is harmonic mean: 2ab/(a+b) = 2 x ${s1} x ${s2}/(${s1}+${s2}) = ${avg} km/h.`
+      solution: `For equal distances, average speed is harmonic mean: \\(\\frac{2ab}{a+b}=\\frac{2\\times ${s1}\\times ${s2}}{${s1}+${s2}}=${avg}\\) km/h.`
     });
   }
 
@@ -224,7 +278,7 @@ function makeQuant(seed, index) {
       id, section: "Quant", setTitle: "Quantitative Aptitude", topic: "Mixtures", difficulty: "Moderate-Difficult",
       question: `${vol} litres of a solution contains ${p}% alcohol. How many litres of pure alcohol must be added to make it ${target}% alcohol?`,
       ...opts,
-      solution: `Initial alcohol = ${vol * p / 100}. Let x be pure alcohol added. (${vol * p / 100}+x)/(${vol}+x) = ${target}/100. Solving gives x = ${x} litres.`
+      solution: `Initial alcohol \\(=${vol * p / 100}\\). Let \\(x\\) be pure alcohol added. \\(\\frac{${vol * p / 100}+x}{${vol}+x}=\\frac{${target}}{100}\\). Solving gives \\(x=${x}\\) litres.`
     });
   }
 
@@ -239,7 +293,7 @@ function makeQuant(seed, index) {
       id, section: "Quant", setTitle: "Quantitative Aptitude", topic: "Number System", difficulty: "Moderate",
       question: `How many ${n}-digit positive integers are divisible by ${d}?`,
       ...opts,
-      solution: `Smallest ${n}-digit multiple of ${d} is ${first}; largest is ${last}. Count = (${last}-${first})/${d}+1 = ${ans}.`
+      solution: `Smallest ${n}-digit multiple of ${d} is ${first}; largest is ${last}. Count \\(=\\frac{${last}-${first}}{${d}}+1=${ans}\\).`
     });
   }
 
@@ -256,7 +310,7 @@ function makeQuant(seed, index) {
       id, section: "Quant", setTitle: "Quantitative Aptitude", topic: "Geometry", difficulty: "Difficult",
       question: `An isosceles triangle has equal sides ${side} cm each and base ${base} cm. What is its inradius?`,
       ...opts,
-      solution: `Height = sqrt(${side}^2 - (${base}/2)^2) = ${h.toFixed(2)}. Area = ${area}. Semiperimeter = ${perimeter / 2}. Inradius = area/semiperimeter = ${inradius}.`
+      solution: `Height \\(=\\sqrt{${side}^2-(${base}/2)^2}=${h.toFixed(2)}\\). Area \\(=${area}\\). Semiperimeter \\(=${perimeter / 2}\\). Inradius \\(=\\frac{\\text{area}}{\\text{semiperimeter}}=${inradius}\\).`
     });
   }
 
@@ -269,7 +323,7 @@ function makeQuant(seed, index) {
       id, section: "Quant", setTitle: "Quantitative Aptitude", topic: "Combinatorics", difficulty: "Moderate-Difficult",
       question: `From ${n} people, how many committees of ${r} people can be formed if order does not matter?`,
       ...opts,
-      solution: `Committees are selections, so use combinations: C(${n},${r}) = ${ans}.`
+      solution: `Committees are selections, so use combinations: \\({}^{${n}}C_{${r}}=${ans}\\).`
     });
   }
 
@@ -281,9 +335,9 @@ function makeQuant(seed, index) {
     const opts = optionize(rand, ans, [ans + sum, ans - diff, sum * diff]);
     return makeQuestion({
       id, section: "Quant", setTitle: "Quantitative Aptitude", topic: "Quadratics", difficulty: "Difficult",
-      question: `The roots of x² - ${sum}x + k = 0 are positive and differ by ${diff}. What is k?`,
+      question: `The roots of \\(x^2-${sum}x+k=0\\) are positive and differ by ${diff}. What is \\(k\\)?`,
       ...opts,
-      solution: `Roots have sum ${sum} and difference ${diff}. They are (${sum}-${diff})/2 = ${r1} and (${sum}+${diff})/2 = ${r2}. Product k = ${ans}.`
+      solution: `Roots have sum \\(${sum}\\) and difference \\(${diff}\\). They are \\(\\frac{${sum}-${diff}}{2}=${r1}\\) and \\(\\frac{${sum}+${diff}}{2}=${r2}\\). Product \\(k=${ans}\\).`
     });
   }
 
@@ -296,7 +350,7 @@ function makeQuant(seed, index) {
     id, section: "Quant", setTitle: "Quantitative Aptitude", topic: "Probability", difficulty: "Moderate-Difficult",
     question: `Two fair dice are rolled. What is the probability that the sum is at least ${threshold}?`,
     ...opts,
-    solution: `Total outcomes = 36. Favourable outcomes with sum at least ${threshold} = ${fav}. Probability = ${fav}/36 = ${ans}.`
+    solution: `Total outcomes \\(=36\\). Favourable outcomes with sum at least ${threshold} \\(=${fav}\\). Probability \\(=\\frac{${fav}}{36}=${ans}\\).`
   });
 }
 
@@ -539,16 +593,17 @@ function renderQuestion() {
   $("sourceLabel").textContent = `${deck.target || q.difficulty} • ${q.difficulty} • Daily generated verified practice`;
   $("progressText").textContent = `Question ${activeIndex + 1} of ${deck.questions.length}`;
   $("passagePanel").innerHTML = q.passageHtml || "<p>No passage is required for this Quant question.</p>";
-  $("questionText").textContent = q.question;
+  $("questionText").textContent = normalizeMath(q.question);
   $("visualPanel").innerHTML = q.visualHtml || "";
   $("visualPanel").classList.toggle("hidden", !q.visualHtml);
   $("optionsPanel").innerHTML = q.options.map((o, i) => `
     <button class="option ${responses[q.id] === i ? "selected" : ""}" data-option="${i}">
-      <span class="badge">${letters[i]}</span><span>${o}</span>
+      <span class="badge">${letters[i]}</span><span>${normalizeMath(o)}</span>
     </button>`).join("");
   $("prevBtn").disabled = activeIndex === 0;
   $("nextBtn").textContent = activeIndex === deck.questions.length - 1 ? "Last question" : "Next";
   saveCurrentSession();
+  typesetMath([$("questionText"), $("optionsPanel"), $("passagePanel"), $("visualPanel")]);
 }
 
 function selectOption(index) {
@@ -633,16 +688,16 @@ function classifyError(q) {
 
 function formulaFor(q) {
   const map = {
-    "Profit, Loss and Discount": "Successive change multiplier: final = initial x (1+a/100) x (1-b/100).",
-    "Algebra": "If x + 1/x = a, then x^3 + 1/x^3 = a^3 - 3a.",
-    "Time and Work": "Work done = time/rate denominator sum. Add fractional work, then convert remaining work to days.",
-    "Speed Time Distance": "For equal distances, average speed = 2ab/(a+b).",
-    "Mixtures": "Set concentration equation: old solute + added solute over new volume = target concentration.",
-    "Number System": "Count multiples from first valid multiple to last valid multiple: (last-first)/d + 1.",
-    "Geometry": "Inradius r = Area / semiperimeter.",
-    "Combinatorics": "Selection uses nCr; arrangement uses nPr.",
-    "Quadratics": "For roots with sum S and difference D: roots are (S-D)/2 and (S+D)/2.",
-    "Probability": "Probability = favourable outcomes / total outcomes.",
+    "Profit, Loss and Discount": "Successive change multiplier: \\(\\text{final}=\\text{initial}\\times(1+a/100)\\times(1-b/100)\\).",
+    "Algebra": "If \\(x+\\frac{1}{x}=a\\), then \\(x^3+\\frac{1}{x^3}=a^3-3a\\).",
+    "Time and Work": "Work done \\(=\\sum \\frac{\\text{time worked}}{\\text{days needed alone}}\\). Add fractional work, then convert the remaining fraction into days.",
+    "Speed Time Distance": "For equal distances, average speed \\(=\\frac{2ab}{a+b}\\).",
+    "Mixtures": "Set concentration equation: \\(\\frac{\\text{old solute}+\\text{added solute}}{\\text{new volume}}=\\text{target concentration}\\).",
+    "Number System": "Count multiples from first valid multiple to last valid multiple: \\(\\frac{\\text{last}-\\text{first}}{d}+1\\).",
+    "Geometry": "Inradius formula: \\(r=\\frac{\\text{Area}}{s}\\), where \\(s\\) is semiperimeter.",
+    "Combinatorics": "Selection uses \\({}^nC_r\\); arrangement uses \\({}^nP_r\\).",
+    "Quadratics": "For roots with sum \\(S\\) and difference \\(D\\), roots are \\(\\frac{S-D}{2}\\) and \\(\\frac{S+D}{2}\\).",
+    "Probability": "Probability \\(=\\frac{\\text{favourable outcomes}}{\\text{total outcomes}}\\).",
     "Schedule + Table": "Read the final grid carefully; compare one row/column at a time."
   };
   if (q.section === "VARC") return "RC method: identify conclusion, tone, and scope; reject options that are extreme, outside scope, or reverse the author's claim.";
@@ -688,19 +743,20 @@ function renderReport(report) {
   const detailed = reportItems.map((item, i) => `
     <article class="mini-analysis ${item.correct ? "correct" : "wrong"}">
       <div class="review-meta">Q${i + 1} • ${item.section} • ${item.topic} • ${item.errorType}</div>
-      <h4>${item.question}</h4>
-      <p><b>Khushi's answer:</b> <span class="${item.correct ? "pill-good" : "pill-bad"}">${item.userAnswer}</span></p>
-      <p><b>Correct answer:</b> <span class="pill-good">${item.correctAnswer}</span></p>
-      <p><b>Formula / idea used:</b> ${item.formula}</p>
-      <p><b>Better way:</b> ${item.betterWay}</p>
-      <p><b>Solution:</b> ${item.solution}</p>
-      <p><b>Next step:</b> ${item.nextStep}</p>
+      <h4>${normalizeMath(item.question)}</h4>
+      <p><b>Khushi's answer:</b> <span class="${item.correct ? "pill-good" : "pill-bad"}">${normalizeMath(item.userAnswer)}</span></p>
+      <p><b>Correct answer:</b> <span class="pill-good">${normalizeMath(item.correctAnswer)}</span></p>
+      <p><b>Formula / idea used:</b> ${normalizeMath(item.formula)}</p>
+      <p><b>Better way:</b> ${normalizeMath(item.betterWay)}</p>
+      <p><b>Solution:</b> ${normalizeMath(item.solution)}</p>
+      <p><b>Next step:</b> ${normalizeMath(item.nextStep)}</p>
     </article>`).join("");
   $("improvementBox").innerHTML = `
     <h3>What went wrong</h3><ul>${sec}</ul>
     <h3>What to do next</h3><ul>${weak}</ul>
     <p>Recommendation: spend 20 minutes reviewing only wrong and unattempted questions, then write one-line error notes: concept gap, calculation slip, misread condition, or option trap.</p>
     <h3>Question-by-question AI-style review</h3>${detailed}`;
+  typesetMath([$("improvementBox")]);
 }
 
 function renderReview() {
@@ -709,16 +765,17 @@ function renderReview() {
     const ok = picked === q.answer;
     return `<article class="review-item ${ok ? "correct" : "wrong"}">
       <div class="review-meta">${i + 1}. ${q.section} • ${q.topic} • ${q.difficulty}</div>
-      <h3>${q.question}</h3>
+      <h3>${normalizeMath(q.question)}</h3>
       ${q.passageHtml ? `<div class="solution">${q.passageHtml}</div>` : ""}
       ${q.visualHtml ? `<div class="visual-panel">${q.visualHtml}</div>` : ""}
-      <p>Your answer: <span class="${ok ? "pill-good" : "pill-bad"}">${picked === undefined ? "Unattempted" : letters[picked] + ". " + q.options[picked]}</span></p>
-      <p>Correct answer: <span class="pill-good">${letters[q.answer]}. ${q.options[q.answer]}</span></p>
-      <p><b>Formula / idea:</b> ${formulaFor(q)}</p>
-      <p><b>Better way:</b> ${betterWayFor(q, ok ? "Correct" : picked === undefined ? "Unattempted" : classifyError(q))}</p>
-      <div class="solution"><b>Detailed solution:</b><br>${q.solution}</div>
+      <p>Your answer: <span class="${ok ? "pill-good" : "pill-bad"}">${normalizeMath(picked === undefined ? "Unattempted" : letters[picked] + ". " + q.options[picked])}</span></p>
+      <p>Correct answer: <span class="pill-good">${normalizeMath(letters[q.answer] + ". " + q.options[q.answer])}</span></p>
+      <p><b>Formula / idea:</b> ${normalizeMath(formulaFor(q))}</p>
+      <p><b>Better way:</b> ${normalizeMath(betterWayFor(q, ok ? "Correct" : picked === undefined ? "Unattempted" : classifyError(q)))}</p>
+      <div class="solution"><b>Detailed solution:</b><br>${normalizeMath(q.solution)}</div>
     </article>`;
   }).join("");
+  typesetMath([$("reviewList")]);
 }
 
 function renderHistory() {
@@ -777,8 +834,15 @@ function downloadPdfReport() {
   const dateLabel = deck?.dateKey ? displayDate(deck.dateKey).replace(/ /g, "-") : "today";
   const blockLabel = (deck?.blockTitle || "Daily").replace(/\s+/g, "-");
   document.title = `Khushi-CAT-${blockLabel}-Report-${dateLabel}`;
-  window.print();
-  setTimeout(() => { document.title = originalTitle; }, 600);
+  const printNow = () => {
+    window.print();
+    setTimeout(() => { document.title = originalTitle; }, 600);
+  };
+  if (window.MathJax?.typesetPromise) {
+    window.MathJax.typesetPromise([$("improvementBox"), $("scoreSummary")]).finally(printNow);
+  } else {
+    printNow();
+  }
 }
 
 function renderHome() {

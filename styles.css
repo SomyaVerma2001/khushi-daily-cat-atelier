@@ -126,6 +126,17 @@ code { color: var(--cyan); }
 .score-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; margin: 22px 0; }
 .analysis-box { color: #dfe7f4; line-height: 1.6; }
 .analysis-box h3 { color: var(--amber); margin-bottom: 4px; }
+.mini-analysis {
+  border: 1px solid var(--line);
+  background: rgba(255,255,255,.055);
+  border-radius: 18px;
+  padding: 16px;
+  margin: 12px 0;
+}
+.mini-analysis.correct { border-color: rgba(115,223,168,.4); }
+.mini-analysis.wrong { border-color: rgba(255,120,147,.4); }
+.mini-analysis h4 { margin: 4px 0 10px; font: 650 20px/1.25 Georgia, serif; }
+.mini-analysis p { margin: 8px 0; }
 .review-head { display: flex; justify-content: space-between; gap: 16px; align-items: end; margin-bottom: 18px; }
 .review-item {
   background: var(--panel-2);

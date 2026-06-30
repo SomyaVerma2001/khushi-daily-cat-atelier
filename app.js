@@ -481,6 +481,7 @@ function makeReport() {
   const bySection = {};
   const wrongTopics = {};
   let correct = 0, attempted = 0;
+  const items = [];
   for (const q of deck.questions) {
     const picked = responses[q.id];
     const ok = picked === q.answer;
@@ -491,13 +492,87 @@ function makeReport() {
     if (picked !== undefined) bySection[q.section].attempted++;
     if (ok) bySection[q.section].correct++;
     if (!ok) wrongTopics[q.topic] = (wrongTopics[q.topic] || 0) + 1;
+    items.push(questionAnalysis(q, picked, ok));
   }
   const accuracy = attempted ? Math.round(correct * 100 / attempted) : 0;
   const weakest = Object.entries(wrongTopics).sort((a, b) => b[1] - a[1]).slice(0, 4);
-  return { dateKey: deck.dateKey, total: deck.questions.length, attempted, correct, accuracy, bySection, weakest };
+  return { dateKey: deck.dateKey, total: deck.questions.length, attempted, correct, accuracy, bySection, weakest, items };
+}
+
+function questionAnalysis(q, picked, ok) {
+  const unattempted = picked === undefined;
+  const errorType = ok ? "Correct" : unattempted ? "Unattempted" : classifyError(q);
+  return {
+    id: q.id,
+    section: q.section,
+    topic: q.topic,
+    difficulty: q.difficulty,
+    question: q.question,
+    userAnswer: unattempted ? "Unattempted" : `${letters[picked]}. ${q.options[picked]}`,
+    correctAnswer: `${letters[q.answer]}. ${q.options[q.answer]}`,
+    correct: ok,
+    errorType,
+    solution: q.solution,
+    formula: formulaFor(q),
+    betterWay: betterWayFor(q, errorType),
+    nextStep: nextStepFor(q, errorType)
+  };
+}
+
+function classifyError(q) {
+  if (q.section === "VARC") return "Interpretation / option trap";
+  if (q.section === "DILR") return "Table reading / condition mapping";
+  if (["Profit, Loss and Discount", "Mixtures", "Time and Work", "Speed Time Distance"].includes(q.topic)) return "Formula setup";
+  if (["Algebra", "Quadratics", "Geometry", "Number System"].includes(q.topic)) return "Concept or transformation";
+  return "Execution / option elimination";
+}
+
+function formulaFor(q) {
+  const map = {
+    "Profit, Loss and Discount": "Successive change multiplier: final = initial x (1+a/100) x (1-b/100).",
+    "Algebra": "If x + 1/x = a, then x^3 + 1/x^3 = a^3 - 3a.",
+    "Time and Work": "Work done = time/rate denominator sum. Add fractional work, then convert remaining work to days.",
+    "Speed Time Distance": "For equal distances, average speed = 2ab/(a+b).",
+    "Mixtures": "Set concentration equation: old solute + added solute over new volume = target concentration.",
+    "Number System": "Count multiples from first valid multiple to last valid multiple: (last-first)/d + 1.",
+    "Geometry": "Inradius r = Area / semiperimeter.",
+    "Combinatorics": "Selection uses nCr; arrangement uses nPr.",
+    "Quadratics": "For roots with sum S and difference D: roots are (S-D)/2 and (S+D)/2.",
+    "Probability": "Probability = favourable outcomes / total outcomes.",
+    "Schedule + Table": "Read the final grid carefully; compare one row/column at a time."
+  };
+  if (q.section === "VARC") return "RC method: identify conclusion, tone, and scope; reject options that are extreme, outside scope, or reverse the author's claim.";
+  return map[q.topic] || "Use the conditions exactly as written; convert the wording into a small table/equation before choosing an option.";
+}
+
+function betterWayFor(q, errorType) {
+  if (q.section === "VARC") {
+    return "Before looking at options, write a 6-8 word prediction of the answer. Then eliminate options that change the scope or overstate the claim.";
+  }
+  if (q.section === "DILR") {
+    return "Do not solve from memory. Mark the relevant row/column first, then answer only the asked comparison. Most mistakes here come from reading the right table but the wrong field.";
+  }
+  if (q.topic === "Time and Work") return "Use fractional work instead of LCM-heavy calculations. Stop after computing completed work; only then convert the remaining fraction into days.";
+  if (q.topic === "Mixtures") return "Use one variable x and build the final concentration equation directly. Avoid alligation unless two ready-made mixtures are being combined.";
+  if (q.topic === "Speed Time Distance") return "When distances are equal, go straight to harmonic mean. Do not average the two speeds.";
+  if (q.topic === "Algebra") return "Recognize the identity first; expanding powers directly wastes time and increases error risk.";
+  if (q.topic === "Geometry") return "Draw the altitude/semiperimeter relationship first. Inradius questions often collapse to area divided by semiperimeter.";
+  return errorType === "Correct" ? "Good. Still read the solution once and note the fastest route." : "Redo this question once without options. If the setup is correct, the answer should fall out cleanly.";
+}
+
+function nextStepFor(q, errorType) {
+  if (errorType === "Correct") return "Keep this as a green question; revisit only during weekly revision.";
+  if (errorType === "Unattempted") return "Attempt it untimed tonight. If it still feels blocked after 4 minutes, write down the first missing concept.";
+  if (q.section === "VARC") return "Practise 3 RC questions focused only on option elimination and write why each wrong option is wrong.";
+  if (q.section === "DILR") return "Redo the set by rebuilding the grid/table from scratch, then compare your grid with the solution.";
+  return `Revise ${q.topic}, then solve 3 similar questions before moving to a new topic.`;
 }
 
 function renderReport(report) {
+  const reportItems = report.items || deck.questions.map((q) => {
+    const picked = responses[q.id];
+    return questionAnalysis(q, picked, picked === q.answer);
+  });
   $("reportTitle").textContent = `Analysis for ${displayDate(report.dateKey)}`;
   $("scoreSummary").innerHTML = `
     <div><b>${report.correct}/${report.total}</b><span>correct</span></div>
@@ -506,10 +581,22 @@ function renderReport(report) {
     <div><b>${Object.keys(report.bySection).length}</b><span>sections</span></div>`;
   const sec = Object.entries(report.bySection).map(([name, s]) => `<li><b>${name}</b>: ${s.correct}/${s.total} correct, ${s.attempted} attempted.</li>`).join("");
   const weak = report.weakest.length ? report.weakest.map(([t, n]) => `<li>${t}: ${n} miss${n > 1 ? "es" : ""}. Revise concept, then redo similar questions untimed.</li>`).join("") : "<li>No weak area today. Preserve this pace and review solutions anyway.</li>";
+  const detailed = reportItems.map((item, i) => `
+    <article class="mini-analysis ${item.correct ? "correct" : "wrong"}">
+      <div class="review-meta">Q${i + 1} • ${item.section} • ${item.topic} • ${item.errorType}</div>
+      <h4>${item.question}</h4>
+      <p><b>Khushi's answer:</b> <span class="${item.correct ? "pill-good" : "pill-bad"}">${item.userAnswer}</span></p>
+      <p><b>Correct answer:</b> <span class="pill-good">${item.correctAnswer}</span></p>
+      <p><b>Formula / idea used:</b> ${item.formula}</p>
+      <p><b>Better way:</b> ${item.betterWay}</p>
+      <p><b>Solution:</b> ${item.solution}</p>
+      <p><b>Next step:</b> ${item.nextStep}</p>
+    </article>`).join("");
   $("improvementBox").innerHTML = `
     <h3>What went wrong</h3><ul>${sec}</ul>
     <h3>What to do next</h3><ul>${weak}</ul>
-    <p>Recommendation: spend 20 minutes reviewing only wrong and unattempted questions, then write one-line error notes: concept gap, calculation slip, misread condition, or option trap.</p>`;
+    <p>Recommendation: spend 20 minutes reviewing only wrong and unattempted questions, then write one-line error notes: concept gap, calculation slip, misread condition, or option trap.</p>
+    <h3>Question-by-question AI-style review</h3>${detailed}`;
 }
 
 function renderReview() {
@@ -523,6 +610,8 @@ function renderReview() {
       ${q.visualHtml ? `<div class="visual-panel">${q.visualHtml}</div>` : ""}
       <p>Your answer: <span class="${ok ? "pill-good" : "pill-bad"}">${picked === undefined ? "Unattempted" : letters[picked] + ". " + q.options[picked]}</span></p>
       <p>Correct answer: <span class="pill-good">${letters[q.answer]}. ${q.options[q.answer]}</span></p>
+      <p><b>Formula / idea:</b> ${formulaFor(q)}</p>
+      <p><b>Better way:</b> ${betterWayFor(q, ok ? "Correct" : picked === undefined ? "Unattempted" : classifyError(q))}</p>
       <div class="solution"><b>Detailed solution:</b><br>${q.solution}</div>
     </article>`;
   }).join("");
@@ -543,12 +632,36 @@ function renderHistory() {
 
 function sendEmailReport() {
   const report = makeReport();
-  const body = `Khushi's CAT report for ${displayDate(report.dateKey)}%0D%0A%0D%0ACorrect: ${report.correct}/${report.total}%0D%0AAttempted: ${report.attempted}%0D%0AAccuracy: ${report.accuracy}%25%0D%0A%0D%0AWeak areas: ${report.weakest.map(([t, n]) => `${t} (${n})`).join(", ") || "None"}`;
+  const lines = [
+    `Khushi's CAT report for ${displayDate(report.dateKey)}`,
+    ``,
+    `Correct: ${report.correct}/${report.total}`,
+    `Attempted: ${report.attempted}`,
+    `Accuracy: ${report.accuracy}%`,
+    ``,
+    `Weak areas: ${report.weakest.map(([t, n]) => `${t} (${n})`).join(", ") || "None"}`,
+    ``,
+    `Question-wise review:`,
+    ...report.items.map((item, i) => [
+      ``,
+      `Q${i + 1}. ${item.section} - ${item.topic}`,
+      `Question: ${item.question}`,
+      `Khushi's answer: ${item.userAnswer}`,
+      `Correct answer: ${item.correctAnswer}`,
+      `Error type: ${item.errorType}`,
+      `Formula/idea: ${item.formula}`,
+      `Better way: ${item.betterWay}`,
+      `Solution: ${item.solution}`,
+      `Next step: ${item.nextStep}`
+    ].join(`\n`))
+  ];
+  const body = encodeURIComponent(lines.join("\n"));
   const cfg = window.KHUSHI_CAT_CONFIG?.emailjs;
   if (cfg?.publicKey && window.emailjs) {
     alert("EmailJS is configured, but this static build needs the EmailJS browser SDK script added. Falling back to mail draft.");
   }
-  location.href = `mailto:${cfg?.toEmail || ""}?subject=Khushi CAT Daily Report&body=${body}`;
+  const subject = encodeURIComponent("Khushi CAT Daily Report");
+  location.href = `mailto:${cfg?.toEmail || ""}?subject=${subject}&body=${body}`;
 }
 
 function renderHome() {

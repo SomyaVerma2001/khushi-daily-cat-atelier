@@ -13,7 +13,7 @@ A clean standalone daily CAT-practice app.
 - Hides answers while solving.
 - Unlocks detailed solutions after finishing.
 - Has a CAT-style interface and Atelier visual language.
-- Includes hooks for Firebase Google login and EmailJS reports.
+- Includes Firebase Google login and EmailJS-ready report hooks.
 
 ## Run Locally
 
@@ -21,16 +21,14 @@ Open `index.html` in a browser.
 
 ## Enable Google Login / Email Reports
 
-1. Copy `config.example.js` to `config.js`.
-2. Fill Firebase Web App config and enable Google provider in Firebase Auth.
-3. Fill EmailJS public key, service ID, template ID, and recipient email.
-4. Add this script line before `app.js` in `index.html`:
+Firebase config is stored in `config.js`. To make login work:
 
-```html
-<script src="config.js"></script>
-```
+1. Firebase Console -> Authentication -> Get started.
+2. Sign-in method -> Google -> Enable -> Save.
+3. Authentication -> Settings -> Authorized domains.
+4. Add `somyaverma2001.github.io`.
 
-Without `config.js`, the app uses a local Khushi profile.
+Local profile mode remains available as a fallback.
 
 ## GitHub Pages
 

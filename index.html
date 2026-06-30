@@ -34,8 +34,7 @@
             <button id="localBtn" class="secondary">Use Khushi local profile</button>
           </div>
           <p class="tiny">
-            Google login works after Firebase credentials are added in <code>config.js</code>.
-            Until then, local profile mode saves everything in this browser.
+            Google login is connected through Firebase. Local profile remains available as a fallback.
           </p>
         </div>
       </section>
@@ -143,6 +142,9 @@
       </section>
     </main>
   </div>
+  <script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-auth-compat.js"></script>
+  <script src="config.js"></script>
   <script src="app.js"></script>
 </body>
 </html>

@@ -14,6 +14,7 @@ let deck = null;
 let activeIndex = 0;
 let responses = {};
 let paused = false;
+let firebaseReady = false;
 
 function hashString(value) {
   let h = 2166136261;
@@ -561,12 +562,30 @@ function renderHome() {
 
 async function googleLogin() {
   const cfg = window.KHUSHI_CAT_CONFIG || {};
-  if (!cfg.googleClientId && !cfg.firebase?.apiKey) {
-    alert("Google login needs Firebase or Google client credentials in config.js. Using Khushi local profile for now.");
+  if (!cfg.firebase?.apiKey || !window.firebase) {
+    alert("Firebase is not ready yet. Using Khushi local profile for now.");
     localLogin();
     return;
   }
-  localLogin();
+  try {
+    if (!firebase.apps.length) firebase.initializeApp(cfg.firebase);
+    firebaseReady = true;
+    const provider = new firebase.auth.GoogleAuthProvider();
+    const result = await firebase.auth().signInWithPopup(provider);
+    user = {
+      name: result.user.displayName || "Khushi",
+      email: result.user.email || "",
+      uid: result.user.uid,
+      mode: "google"
+    };
+    writeJson(STORE.user, user);
+    $("logoutBtn").classList.remove("hidden");
+    renderHome();
+    show("homeScreen");
+  } catch (err) {
+    console.error(err);
+    alert("Google login failed. Make sure Google sign-in is enabled in Firebase Authentication and this domain is authorized.");
+  }
 }
 
 function localLogin() {
@@ -578,6 +597,28 @@ function localLogin() {
 }
 
 function boot() {
+  const cfg = window.KHUSHI_CAT_CONFIG || {};
+  if (cfg.firebase?.apiKey && window.firebase) {
+    try {
+      if (!firebase.apps.length) firebase.initializeApp(cfg.firebase);
+      firebaseReady = true;
+      firebase.auth().onAuthStateChanged((fbUser) => {
+        if (!fbUser) return;
+        user = {
+          name: fbUser.displayName || "Khushi",
+          email: fbUser.email || "",
+          uid: fbUser.uid,
+          mode: "google"
+        };
+        writeJson(STORE.user, user);
+        $("logoutBtn").classList.remove("hidden");
+        renderHome();
+        show("homeScreen");
+      });
+    } catch (err) {
+      console.warn("Firebase init skipped", err);
+    }
+  }
   user = readJson(STORE.user, null);
   if (user) {
     $("logoutBtn").classList.remove("hidden");
@@ -588,7 +629,13 @@ function boot() {
 
 $("googleBtn").onclick = googleLogin;
 $("localBtn").onclick = localLogin;
-$("logoutBtn").onclick = () => { localStorage.removeItem(STORE.user); location.reload(); };
+$("logoutBtn").onclick = async () => {
+  if (firebaseReady && window.firebase?.auth) {
+    try { await firebase.auth().signOut(); } catch {}
+  }
+  localStorage.removeItem(STORE.user);
+  location.reload();
+};
 $("startTodayBtn").onclick = startSession;
 $("mainMenuBtn").onclick = () => { renderHome(); show(user ? "homeScreen" : "loginScreen"); };
 $("historyBtn").onclick = () => { renderHistory(); show("historyScreen"); };

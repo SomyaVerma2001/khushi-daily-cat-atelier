@@ -571,7 +571,15 @@ async function googleLogin() {
     if (!firebase.apps.length) firebase.initializeApp(cfg.firebase);
     firebaseReady = true;
     const provider = new firebase.auth.GoogleAuthProvider();
-    const result = await firebase.auth().signInWithPopup(provider);
+    provider.setCustomParameters({ prompt: "select_account" });
+    let result;
+    try {
+      result = await firebase.auth().signInWithPopup(provider);
+    } catch (popupError) {
+      console.warn("Popup sign-in failed, trying redirect", popupError);
+      await firebase.auth().signInWithRedirect(provider);
+      return;
+    }
     user = {
       name: result.user.displayName || "Khushi",
       email: result.user.email || "",
@@ -584,7 +592,7 @@ async function googleLogin() {
     show("homeScreen");
   } catch (err) {
     console.error(err);
-    alert("Google login failed. Make sure Google sign-in is enabled in Firebase Authentication and this domain is authorized.");
+    alert(`Google login failed: ${err.code || ""} ${err.message || ""}\n\nMake sure Google sign-in is enabled in Firebase Authentication and this domain is authorized.`);
   }
 }
 
@@ -614,6 +622,21 @@ function boot() {
         $("logoutBtn").classList.remove("hidden");
         renderHome();
         show("homeScreen");
+      });
+      firebase.auth().getRedirectResult().then((result) => {
+        if (!result?.user) return;
+        user = {
+          name: result.user.displayName || "Khushi",
+          email: result.user.email || "",
+          uid: result.user.uid,
+          mode: "google"
+        };
+        writeJson(STORE.user, user);
+        $("logoutBtn").classList.remove("hidden");
+        renderHome();
+        show("homeScreen");
+      }).catch((err) => {
+        console.warn("Redirect login failed", err);
       });
     } catch (err) {
       console.warn("Firebase init skipped", err);

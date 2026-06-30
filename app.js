@@ -97,7 +97,7 @@ function fallbackOption(answer, guard) {
   const raw = String(answer);
   const numeric = Number(raw);
   if (Number.isFinite(numeric)) return String(numeric + guard);
-  const unitMatch = raw.match(/^(-?\\d+(?:\\.\\d+)?)(.*)$/);
+  const unitMatch = raw.match(/^(-?\d+(?:\.\d+)?)(.*)$/);
   if (unitMatch) {
     const next = Number(unitMatch[1]) + guard;
     return `${Number(next.toFixed(2))}${unitMatch[2]}`;
@@ -620,7 +620,7 @@ function renderQuestion() {
   $("visualPanel").classList.toggle("hidden", !q.visualHtml);
   $("optionsPanel").innerHTML = q.options.map((o, i) => `
     <button class="option ${responses[q.id] === i ? "selected" : ""}" data-option="${i}">
-      <span class="badge">${letters[i]}</span><span>${normalizeMath(o)}</span>
+      <span class="badge">${optionLabel(i, q.options.length)}</span><span>${normalizeMath(o)}</span>
     </button>`).join("");
   $("prevBtn").disabled = activeIndex === 0;
   $("nextBtn").textContent = activeIndex === deck.questions.length - 1 ? "Last question" : "Next";
@@ -847,8 +847,8 @@ function renderReview() {
       <h3>${normalizeMath(q.question)}</h3>
       ${q.passageHtml ? `<div class="solution">${q.passageHtml}</div>` : ""}
       ${q.visualHtml ? `<div class="visual-panel">${q.visualHtml}</div>` : ""}
-      <p>Your answer: <span class="${ok ? "pill-good" : "pill-bad"}">${normalizeMath(picked === undefined ? "Unattempted" : letters[picked] + ". " + q.options[picked])}</span></p>
-      <p>Correct answer: <span class="pill-good">${normalizeMath(letters[q.answer] + ". " + q.options[q.answer])}</span></p>
+      <p>Your answer: <span class="${ok ? "pill-good" : "pill-bad"}">${normalizeMath(picked === undefined ? "Unattempted" : optionLabel(picked, q.options.length) + ". " + q.options[picked])}</span></p>
+      <p>Correct answer: <span class="pill-good">${normalizeMath(optionLabel(q.answer, q.options.length) + ". " + q.options[q.answer])}</span></p>
       <p><b>Formula / idea:</b> ${normalizeMath(formulaFor(q))}</p>
       <p><b>Better way:</b> ${normalizeMath(betterWayFor(q, ok ? "Correct" : picked === undefined ? "Unattempted" : classifyError(q)))}</p>
       <div class="solution"><b>Detailed solution:</b><br>${normalizeMath(q.solution)}</div>
